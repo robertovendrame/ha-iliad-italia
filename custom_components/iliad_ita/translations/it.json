@@ -62,11 +62,17 @@
       "data_total_calculated": {"name": "Dati totali calcolati"},
       "data_used_percent": {"name": "Dati utilizzati percentuale"},
       "data_remaining_percent": {"name": "Dati residui percentuale"},
+      "renewal_date": {"name": "Data rinnovo"},
+      "days_until_renewal": {"name": "Giorni al rinnovo"},
+      "average_daily_usage": {"name": "Consumo medio giornaliero stimato"},
+      "daily_budget_to_renewal": {"name": "Budget dati giornaliero fino al rinnovo"},
+      "projected_remaining_at_renewal": {"name": "Dati previsti al rinnovo"},
       "last_update": {"name": "Ultimo aggiornamento"}
     },
     "binary_sensor": {
       "low_data": {"name": "Dati in esaurimento"},
-      "low_credit": {"name": "Credito basso"}
+      "low_credit": {"name": "Credito basso"},
+      "projected_data_exhaustion": {"name": "Rischio esaurimento prima del rinnovo"}
     },
     "button": {
       "refresh": {"name": "Aggiorna ora"}
