@@ -16,6 +16,7 @@ Ogni account/SIM configurato crea un device separato con:
 - Percentuale dati residui
 - Ultimo aggiornamento riuscito
 - Binary sensor **Dati in esaurimento**
+- Binary sensor **Credito basso**
 - Pulsante **Aggiorna ora** per forzare un refresh immediato
 
 L'integrazione supporta:
@@ -29,6 +30,8 @@ L'integrazione supporta:
 - intervallo di aggiornamento configurabile per ogni SIM da **1 a 24 ore**;
 - refresh manuale per singola SIM;
 - soglie dati configurabili per ogni SIM;
+- soglia credito configurabile per ogni SIM;
+- diagnostica Home Assistant senza username o password;
 - identificativi stabili senza esporre in chiaro l'ID Iliad negli `unique_id`.
 
 ## Installazione tramite HACS
@@ -77,21 +80,30 @@ Lo stesso account non può essere aggiunto due volte nella stessa istanza, mentr
 
 Apri l'integrazione in **Impostazioni → Dispositivi e servizi**, seleziona la SIM e apri **Configura**.
 
-Sono disponibili tre opzioni indipendenti per ogni account:
+Sono disponibili quattro opzioni indipendenti per ogni account:
 
 - **Soglia dati residui (GB)** — default `10 GB`;
 - **Soglia dati residui (%)** — default `10%`;
+- **Soglia credito (€)** — default `5 €`;
 - **Intervallo aggiornamento (ore)** — default `6`, configurabile da `1` a `24` ore.
 
-Il binary sensor **Dati in esaurimento** passa a `on` quando viene raggiunta **almeno una** delle due soglie configurate: GB residui oppure percentuale residua. Questo permette, per esempio, di impostare automazioni diverse per una SIM da router e per una SIM da telefono.
+Il binary sensor **Dati in esaurimento** passa a `on` quando viene raggiunta **almeno una** delle due soglie dati configurate: GB residui oppure percentuale residua.
 
-Le soglie correnti sono esposte anche come attributi del binary sensor (`threshold_gb` e `threshold_percent`).
+Il binary sensor **Credito basso** passa a `on` quando il credito disponibile è minore o uguale alla soglia configurata.
+
+Le soglie correnti sono esposte anche come attributi dei binary sensor, così possono essere usate facilmente in dashboard e automazioni.
 
 ## Dati calcolati
 
 `Dati totali calcolati`, `Dati utilizzati percentuale` e `Dati residui percentuale` sono valori derivati localmente da Home Assistant a partire dai dati usati e residui restituiti dall'Area Personale Iliad. Non sono valori aggiuntivi forniti direttamente da Iliad.
 
 Questo mantiene il parser semplice e permette di avere subito indicatori più utili per dashboard e automazioni.
+
+## Diagnostica
+
+Home Assistant può generare i dati diagnostici della singola config entry. La diagnostica include stato del coordinator, intervallo configurato, opzioni e valori già parsati, ma **non include ID utente Iliad o password**.
+
+È pensata per rendere più semplice il debug di eventuali problemi futuri senza chiedere agli utenti di condividere credenziali.
 
 ## Come funziona
 
