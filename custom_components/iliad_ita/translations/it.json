@@ -40,6 +40,19 @@
       "wrong_account": "L'ID utente non corrisponde all'account configurato."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni SIM Iliad",
+        "description": "Configura le soglie per l'avviso dati in esaurimento e la frequenza di aggiornamento di questa SIM.",
+        "data": {
+          "data_threshold_gb": "Soglia dati residui (GB)",
+          "data_threshold_percent": "Soglia dati residui (%)",
+          "update_interval_hours": "Intervallo aggiornamento (ore)"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "balance": {"name": "Credito"},
@@ -49,6 +62,9 @@
       "data_used_percent": {"name": "Dati utilizzati percentuale"},
       "data_remaining_percent": {"name": "Dati residui percentuale"},
       "last_update": {"name": "Ultimo aggiornamento"}
+    },
+    "binary_sensor": {
+      "low_data": {"name": "Dati in esaurimento"}
     },
     "button": {
       "refresh": {"name": "Aggiorna ora"}
