@@ -9,9 +9,9 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import IliadAuthError, IliadClient, IliadConnectionError, IliadParseError
@@ -50,7 +50,7 @@ class IliadConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle setup of a new Iliad account."""
         errors: dict[str, str] = {}
 
@@ -88,13 +88,13 @@ class IliadConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(
         self, entry_data: Mapping[str, Any]
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Start reauthentication for an existing Iliad account."""
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Validate a replacement password and reload the entry."""
         errors: dict[str, str] = {}
         entry = self._get_reauth_entry()
@@ -122,7 +122,7 @@ class IliadConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Allow changing the friendly name and credentials of an entry."""
         errors: dict[str, str] = {}
         entry = self._get_reconfigure_entry()
