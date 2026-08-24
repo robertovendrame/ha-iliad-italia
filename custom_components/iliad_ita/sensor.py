@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Callable
 
 from homeassistant.components.sensor import (
@@ -12,7 +13,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfInformation
+from homeassistant.const import PERCENTAGE, UnitOfInformation
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -22,12 +23,34 @@ from .api import IliadData
 from .const import DOMAIN
 from .coordinator import IliadDataUpdateCoordinator
 
+SensorValue = float | datetime | None
+
 
 @dataclass(frozen=True, kw_only=True)
 class IliadSensorEntityDescription(SensorEntityDescription):
     """Describe an Iliad sensor."""
 
-    value_fn: Callable[[IliadData], float | None]
+    value_fn: Callable[[IliadData], SensorValue]
+
+
+def _total_data(data: IliadData) -> float | None:
+    if data.data_used_gb is None or data.data_remaining_gb is None:
+        return None
+    return data.data_used_gb + data.data_remaining_gb
+
+
+def _used_percent(data: IliadData) -> float | None:
+    total = _total_data(data)
+    if total is None or total <= 0 or data.data_used_gb is None:
+        return None
+    return (data.data_used_gb / total) * 100
+
+
+def _remaining_percent(data: IliadData) -> float | None:
+    total = _total_data(data)
+    if total is None or total <= 0 or data.data_remaining_gb is None:
+        return None
+    return (data.data_remaining_gb / total) * 100
 
 
 SENSORS: tuple[IliadSensorEntityDescription, ...] = (
@@ -58,6 +81,41 @@ SENSORS: tuple[IliadSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfInformation.GIGABYTES,
         suggested_display_precision=2,
         value_fn=lambda data: data.data_remaining_gb,
+    ),
+    IliadSensorEntityDescription(
+        key="data_total_calculated",
+        translation_key="data_total_calculated",
+        icon="mdi:database",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        suggested_display_precision=2,
+        value_fn=_total_data,
+    ),
+    IliadSensorEntityDescription(
+        key="data_used_percent",
+        translation_key="data_used_percent",
+        icon="mdi:chart-donut",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=1,
+        value_fn=_used_percent,
+    ),
+    IliadSensorEntityDescription(
+        key="data_remaining_percent",
+        translation_key="data_remaining_percent",
+        icon="mdi:chart-donut-variant",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=1,
+        value_fn=_remaining_percent,
+    ),
+    IliadSensorEntityDescription(
+        key="last_update",
+        translation_key="last_update",
+        icon="mdi:clock-check-outline",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda data: data.fetched_at,
     ),
 )
 
@@ -97,6 +155,6 @@ class IliadSensor(CoordinatorEntity[IliadDataUpdateCoordinator], SensorEntity):
         )
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> SensorValue:
         """Return current sensor value."""
         return self.entity_description.value_fn(self.coordinator.data)
