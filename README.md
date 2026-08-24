@@ -15,6 +15,7 @@ Ogni account/SIM configurato crea un device separato con:
 - Percentuale dati utilizzati
 - Percentuale dati residui
 - Ultimo aggiornamento riuscito
+- Binary sensor **Dati in esaurimento**
 - Pulsante **Aggiorna ora** per forzare un refresh immediato
 
 L'integrazione supporta:
@@ -25,8 +26,9 @@ L'integrazione supporta:
 - riautenticazione quando le credenziali non sono più valide;
 - riconfigurazione del nome della SIM e delle credenziali;
 - sessioni/cookie separati per ogni account configurato;
-- aggiornamento cloud automatico ogni 6 ore;
+- intervallo di aggiornamento configurabile per ogni SIM da **1 a 24 ore**;
 - refresh manuale per singola SIM;
+- soglie dati configurabili per ogni SIM;
 - identificativi stabili senza esporre in chiaro l'ID Iliad negli `unique_id`.
 
 ## Installazione tramite HACS
@@ -71,6 +73,20 @@ Il comportamento multi-SIM è stato verificato con due account Iliad reali conte
 
 Lo stesso account non può essere aggiunto due volte nella stessa istanza, mentre la stessa integrazione può essere usata su istanze Home Assistant differenti.
 
+## Opzioni per ogni SIM
+
+Apri l'integrazione in **Impostazioni → Dispositivi e servizi**, seleziona la SIM e apri **Configura**.
+
+Sono disponibili tre opzioni indipendenti per ogni account:
+
+- **Soglia dati residui (GB)** — default `10 GB`;
+- **Soglia dati residui (%)** — default `10%`;
+- **Intervallo aggiornamento (ore)** — default `6`, configurabile da `1` a `24` ore.
+
+Il binary sensor **Dati in esaurimento** passa a `on` quando viene raggiunta **almeno una** delle due soglie configurate: GB residui oppure percentuale residua. Questo permette, per esempio, di impostare automazioni diverse per una SIM da router e per una SIM da telefono.
+
+Le soglie correnti sono esposte anche come attributi del binary sensor (`threshold_gb` e `threshold_percent`).
+
 ## Dati calcolati
 
 `Dati totali calcolati`, `Dati utilizzati percentuale` e `Dati residui percentuale` sono valori derivati localmente da Home Assistant a partire dai dati usati e residui restituiti dall'Area Personale Iliad. Non sono valori aggiuntivi forniti direttamente da Iliad.
@@ -99,15 +115,18 @@ La repository contiene una GitHub Action che esegue:
 
 ## Roadmap immediata
 
-Prossimi dati/funzioni da valutare, se presenti nella pagina Iliad o recuperabili in modo affidabile:
+Prossimi dati/funzioni da valutare, **solo se recuperabili in modo affidabile dalla pagina Iliad reale**:
 
 - data di rinnovo;
 - giorni al rinnovo;
 - offerta/piano;
 - plafond dati ufficiale;
 - numero linea o altro identificativo utile;
-- soglie configurabili e binary sensor di allarme;
-- stima consumo medio e proiezione fino al rinnovo.
+- consumo medio giornaliero;
+- GB/giorno disponibili fino al rinnovo;
+- previsione di esaurimento prima del rinnovo.
+
+La parte di previsione dipende dalla disponibilità di una data di rinnovo affidabile: non verranno introdotti selettori HTML ipotetici o dati inventati.
 
 ## Origine e attribuzione
 
