@@ -1,0 +1,31 @@
+{
+  "title": "Iliad Italia",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configura Iliad Italia",
+        "description": "Aggiungi una SIM/account Iliad. Puoi configurarne più di uno nella stessa istanza Home Assistant.",
+        "data": {
+          "name": "Nome SIM",
+          "username": "ID utente Iliad",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile collegarsi a Iliad.",
+      "invalid_auth": "Credenziali Iliad non valide.",
+      "cannot_parse": "Login riuscito, ma la pagina consumi non è stata riconosciuta."
+    },
+    "abort": {
+      "already_configured": "Questo account Iliad è già configurato in questa istanza."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "balance": {"name": "Credito"},
+      "data_used": {"name": "Dati utilizzati"},
+      "data_remaining": {"name": "Dati residui"}
+    }
+  }
+}
