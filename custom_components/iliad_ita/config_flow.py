@@ -6,13 +6,14 @@ from collections.abc import Mapping
 import hashlib
 from typing import Any
 
+from aiohttp import CookieJar
 import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import IliadAuthError, IliadClient, IliadConnectionError, IliadParseError
 from .const import CONF_NAME, DEFAULT_NAME, DOMAIN
@@ -25,13 +26,17 @@ def account_key(username: str) -> str:
 
 
 async def _validate_input(hass: HomeAssistant, data: Mapping[str, str]) -> None:
-    """Validate Iliad credentials by fetching current account data."""
-    client = IliadClient(
-        async_get_clientsession(hass),
-        data[CONF_USERNAME],
-        data[CONF_PASSWORD],
-    )
-    await client.async_fetch_data()
+    """Validate Iliad credentials with an isolated cookie session."""
+    session = async_create_clientsession(hass, cookie_jar=CookieJar())
+    try:
+        client = IliadClient(
+            session,
+            data[CONF_USERNAME],
+            data[CONF_PASSWORD],
+        )
+        await client.async_fetch_data()
+    finally:
+        await session.close()
 
 
 def _map_error(err: Exception) -> str:
