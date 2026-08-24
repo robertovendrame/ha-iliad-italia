@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 
+from aiohttp import CookieJar
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import IliadAuthError, IliadClient, IliadConnectionError, IliadData, IliadParseError
@@ -23,8 +25,9 @@ class IliadDataUpdateCoordinator(DataUpdateCoordinator[IliadData]):
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.config_entry = entry
+        session = async_create_clientsession(hass, cookie_jar=CookieJar())
         self._client = IliadClient(
-            async_get_clientsession(hass),
+            session,
             entry.data[CONF_USERNAME],
             entry.data[CONF_PASSWORD],
         )
