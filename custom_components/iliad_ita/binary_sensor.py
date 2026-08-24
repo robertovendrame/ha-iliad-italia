@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import calendar
+from datetime import date
+
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -12,6 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .api import IliadData
 from .const import (
@@ -39,6 +43,13 @@ LOW_CREDIT_DESCRIPTION = BinarySensorEntityDescription(
     device_class=BinarySensorDeviceClass.PROBLEM,
 )
 
+PROJECTED_EXHAUSTION_DESCRIPTION = BinarySensorEntityDescription(
+    key="projected_data_exhaustion",
+    translation_key="projected_data_exhaustion",
+    icon="mdi:chart-line-variant",
+    device_class=BinarySensorDeviceClass.PROBLEM,
+)
+
 
 def _remaining_percent(data: IliadData) -> float | None:
     """Calculate the percentage of data remaining from parsed values."""
@@ -48,6 +59,40 @@ def _remaining_percent(data: IliadData) -> float | None:
     if total <= 0:
         return None
     return (data.data_remaining_gb / total) * 100
+
+
+def _previous_month_same_day(value: date) -> date:
+    """Infer the previous monthly renewal date."""
+    year = value.year
+    month = value.month - 1
+    if month == 0:
+        month = 12
+        year -= 1
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _projected_remaining_at_renewal(data: IliadData) -> float | None:
+    """Project remaining GB at renewal from average usage in the current cycle."""
+    if (
+        data.renewal_date is None
+        or data.data_used_gb is None
+        or data.data_remaining_gb is None
+    ):
+        return None
+
+    today = dt_util.now().date()
+    days_remaining = (data.renewal_date - today).days
+    if days_remaining < 0:
+        return None
+
+    cycle_start = _previous_month_same_day(data.renewal_date)
+    elapsed_days = (today - cycle_start).days
+    if elapsed_days <= 0:
+        return None
+
+    average_daily_usage = data.data_used_gb / elapsed_days
+    return data.data_remaining_gb - (average_daily_usage * days_remaining)
 
 
 async def async_setup_entry(
@@ -61,6 +106,7 @@ async def async_setup_entry(
         [
             IliadLowDataBinarySensor(coordinator, entry),
             IliadLowCreditBinarySensor(coordinator, entry),
+            IliadProjectedDataExhaustionBinarySensor(coordinator, entry),
         ]
     )
 
@@ -182,4 +228,33 @@ class IliadLowCreditBinarySensor(IliadBinarySensorBase):
                     DEFAULT_CREDIT_THRESHOLD_EUR,
                 )
             )
+        }
+
+
+class IliadProjectedDataExhaustionBinarySensor(IliadBinarySensorBase):
+    """Indicate when current usage pace is projected to exhaust data before renewal."""
+
+    def __init__(
+        self,
+        coordinator: IliadDataUpdateCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator, entry, PROJECTED_EXHAUSTION_DESCRIPTION)
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true when projected remaining data at renewal is below zero."""
+        projected = _projected_remaining_at_renewal(self.coordinator.data)
+        if projected is None:
+            return None
+        return projected < 0
+
+    @property
+    def extra_state_attributes(self) -> dict[str, float | str | None]:
+        """Expose projection inputs for dashboards and diagnostics."""
+        data = self.coordinator.data
+        projected = _projected_remaining_at_renewal(data)
+        return {
+            "renewal_date": data.renewal_date.isoformat() if data.renewal_date else None,
+            "projected_remaining_gb": projected,
         }
