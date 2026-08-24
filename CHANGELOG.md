@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file.
 - Remaining-data percentage sensor.
 - Last successful update timestamp sensor.
 - Per-SIM `Aggiorna ora` button for an immediate manual refresh.
+- Per-SIM configurable remaining-data threshold in GB.
+- Per-SIM configurable remaining-data threshold in percent.
+- `Dati in esaurimento` problem binary sensor, activated when either configured threshold is reached.
+- Per-SIM configurable polling interval from 1 to 24 hours, with 6 hours as default.
 
 ### Changed
 - The integration is now designed as a generic multi-SIM, multi-instance Home Assistant integration rather than a project-specific component.
