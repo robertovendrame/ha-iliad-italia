@@ -36,6 +36,7 @@ async def async_get_config_entry_diagnostics(
             "balance_eur": data.balance_eur,
             "data_used_gb": data.data_used_gb,
             "data_remaining_gb": data.data_remaining_gb,
+            "renewal_date": data.renewal_date.isoformat() if data.renewal_date else None,
             "fetched_at": data.fetched_at.isoformat(),
         },
     }
