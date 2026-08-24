@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 DOMAIN = "iliad_ita"
-PLATFORMS = ["sensor"]
+PLATFORMS = ["sensor", "button"]
 
 CONF_NAME = "name"
 CONF_USERNAME = "username"
