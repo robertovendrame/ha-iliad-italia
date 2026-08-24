@@ -10,6 +10,22 @@
           "username": "ID utente Iliad",
           "password": "Password"
         }
+      },
+      "reauth_confirm": {
+        "title": "Riautentica Iliad Italia",
+        "description": "Aggiorna la password dell'account Iliad configurato.",
+        "data": {
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Riconfigura Iliad Italia",
+        "description": "Aggiorna il nome della SIM o le credenziali. L'ID utente deve restare associato allo stesso account.",
+        "data": {
+          "name": "Nome SIM",
+          "username": "ID utente Iliad",
+          "password": "Password"
+        }
       }
     },
     "error": {
@@ -18,7 +34,10 @@
       "cannot_parse": "Login riuscito, ma la pagina consumi non è stata riconosciuta."
     },
     "abort": {
-      "already_configured": "Questo account Iliad è già configurato in questa istanza."
+      "already_configured": "Questo account Iliad è già configurato in questa istanza.",
+      "reauth_successful": "Autenticazione Iliad aggiornata.",
+      "reconfigure_successful": "Configurazione Iliad aggiornata.",
+      "wrong_account": "L'ID utente non corrisponde all'account configurato."
     }
   },
   "entity": {
