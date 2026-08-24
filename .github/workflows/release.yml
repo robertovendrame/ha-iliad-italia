@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release, without the v prefix (for example 0.3.0)"
+        description: "Version to release, without the v prefix (for example 0.4.0-beta.1)"
         required: true
         type: string
 
@@ -30,8 +30,12 @@ jobs:
           import sys
 
           version = os.environ["VERSION"]
-          if not re.fullmatch(r"\d+\.\d+\.\d+", version):
-              sys.exit(f"Invalid version: {version}. Expected X.Y.Z")
+          pattern = r"\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?"
+          if not re.fullmatch(pattern, version):
+              sys.exit(
+                  f"Invalid version: {version}. Expected X.Y.Z or "
+                  "X.Y.Z-alpha.N / X.Y.Z-beta.N / X.Y.Z-rc.N"
+              )
           PY
 
       - name: Check manifest version
@@ -83,7 +87,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
         run: |
+          EXTRA_ARGS=()
+          if [[ "${VERSION}" == *-* ]]; then
+            EXTRA_ARGS+=(--prerelease)
+          fi
+
           gh release create "v${VERSION}" \
             --target "${GITHUB_SHA}" \
             --title "Iliad Italia v${VERSION}" \
-            --notes-file release-notes.md
+            --notes-file release-notes.md \
+            "${EXTRA_ARGS[@]}"
