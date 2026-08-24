@@ -44,10 +44,11 @@
     "step": {
       "init": {
         "title": "Opzioni SIM Iliad",
-        "description": "Configura le soglie per l'avviso dati in esaurimento e la frequenza di aggiornamento di questa SIM.",
+        "description": "Configura le soglie per dati e credito e la frequenza di aggiornamento di questa SIM.",
         "data": {
           "data_threshold_gb": "Soglia dati residui (GB)",
           "data_threshold_percent": "Soglia dati residui (%)",
+          "credit_threshold_eur": "Soglia credito (€)",
           "update_interval_hours": "Intervallo aggiornamento (ore)"
         }
       }
@@ -64,7 +65,8 @@
       "last_update": {"name": "Ultimo aggiornamento"}
     },
     "binary_sensor": {
-      "low_data": {"name": "Dati in esaurimento"}
+      "low_data": {"name": "Dati in esaurimento"},
+      "low_credit": {"name": "Credito basso"}
     },
     "button": {
       "refresh": {"name": "Aggiorna ora"}
