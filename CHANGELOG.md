@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0-beta.1] - 2026-08-24
+
 ### Added
 - Renewal-date parsing from the Iliad `Consumi e Credito` page without relying on a new hard-coded CSS selector.
 - `Data rinnovo` and `Giorni al rinnovo` sensors.
@@ -14,8 +16,9 @@ All notable changes to this project will be documented in this file.
 - Renewal date included in privacy-safe diagnostics.
 
 ### Notes
-- Renewal parsing and all derived projection entities require real-world validation before the next release.
+- This is a beta release intended for real-world validation of renewal-date parsing and projection entities.
 - Projection values are estimates derived locally from current-period usage, remaining data and the monthly renewal date; they are not values provided directly by Iliad.
+- If the renewal date is not recognized, the renewal/projection entities may be unavailable while the existing credit and traffic sensors continue to work.
 
 ## [0.3.0] - 2026-08-24
 
