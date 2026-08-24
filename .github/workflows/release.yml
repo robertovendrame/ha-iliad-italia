@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, without the v prefix (for example 0.3.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate requested version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import sys
+
+          version = os.environ["VERSION"]
+          if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+              sys.exit(f"Invalid version: {version}. Expected X.Y.Z")
+          PY
+
+      - name: Check manifest version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+
+          version = os.environ["VERSION"]
+          with open("custom_components/iliad_ita/manifest.json", encoding="utf-8") as file:
+              manifest = json.load(file)
+
+          if manifest.get("version") != version:
+              sys.exit(
+                  f"manifest.json version is {manifest.get('version')!r}, "
+                  f"but release version is {version!r}"
+              )
+          PY
+
+      - name: Extract release notes from changelog
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
+          pattern = rf"^## \[{re.escape(version)}\].*?\n(.*?)(?=^## \[|\Z)"
+          match = re.search(pattern, changelog, flags=re.MULTILINE | re.DOTALL)
+          if not match:
+              sys.exit(f"No CHANGELOG section found for {version}")
+
+          notes = match.group(1).strip()
+          if not notes:
+              sys.exit(f"CHANGELOG section for {version} is empty")
+
+          Path("release-notes.md").write_text(notes + "\n", encoding="utf-8")
+          PY
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh release create "v${VERSION}" \
+            --target "${GITHUB_SHA}" \
+            --title "Iliad Italia v${VERSION}" \
+            --notes-file release-notes.md
