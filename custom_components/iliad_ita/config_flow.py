@@ -17,10 +17,12 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import IliadAuthError, IliadClient, IliadConnectionError, IliadParseError
 from .const import (
+    CONF_CREDIT_THRESHOLD_EUR,
     CONF_DATA_THRESHOLD_GB,
     CONF_DATA_THRESHOLD_PERCENT,
     CONF_NAME,
     CONF_UPDATE_INTERVAL_HOURS,
+    DEFAULT_CREDIT_THRESHOLD_EUR,
     DEFAULT_DATA_THRESHOLD_GB,
     DEFAULT_DATA_THRESHOLD_PERCENT,
     DEFAULT_NAME,
@@ -220,6 +222,13 @@ class IliadOptionsFlow(config_entries.OptionsFlow):
                             DEFAULT_DATA_THRESHOLD_PERCENT,
                         ),
                     ): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
+                    vol.Required(
+                        CONF_CREDIT_THRESHOLD_EUR,
+                        default=options.get(
+                            CONF_CREDIT_THRESHOLD_EUR,
+                            DEFAULT_CREDIT_THRESHOLD_EUR,
+                        ),
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0, max=10000)),
                     vol.Required(
                         CONF_UPDATE_INTERVAL_HOURS,
                         default=options.get(
