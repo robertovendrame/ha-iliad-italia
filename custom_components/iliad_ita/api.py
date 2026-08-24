@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import re
 
 from aiohttp import ClientError, ClientSession
@@ -35,6 +35,7 @@ class IliadData:
     balance_eur: float | None
     data_used_gb: float | None
     data_remaining_gb: float | None
+    renewal_date: date | None
     fetched_at: datetime
 
 
@@ -56,6 +57,82 @@ def _size_to_gb(value: str, unit: str) -> float:
         "TB": 1_000,
     }
     return number * factors[unit.upper()]
+
+
+_ITALIAN_MONTHS = {
+    "gennaio": 1,
+    "febbraio": 2,
+    "marzo": 3,
+    "aprile": 4,
+    "maggio": 5,
+    "giugno": 6,
+    "luglio": 7,
+    "agosto": 8,
+    "settembre": 9,
+    "ottobre": 10,
+    "novembre": 11,
+    "dicembre": 12,
+}
+
+
+def _build_date(day: int, month: int, year: int | None, reference: date) -> date | None:
+    """Build a date and infer the year when Iliad omits it."""
+    if year is None:
+        year = reference.year
+        try:
+            candidate = date(year, month, day)
+        except ValueError:
+            return None
+        if candidate < reference:
+            year += 1
+
+    try:
+        return date(year, month, day)
+    except ValueError:
+        return None
+
+
+def _parse_renewal_date(text: str, reference: date) -> date | None:
+    """Find a renewal date only in text located close to a renewal label."""
+    normalized = " ".join(text.split())
+
+    for keyword in re.finditer(r"rinnov\w*", normalized, flags=re.IGNORECASE):
+        start = max(0, keyword.start() - 40)
+        end = min(len(normalized), keyword.end() + 120)
+        window = normalized[start:end]
+
+        numeric = re.search(
+            r"\b(\d{1,2})[/.\-](\d{1,2})(?:[/.\-](\d{2,4}))?\b",
+            window,
+        )
+        if numeric:
+            day = int(numeric.group(1))
+            month = int(numeric.group(2))
+            year_raw = numeric.group(3)
+            year = int(year_raw) if year_raw else None
+            if year is not None and year < 100:
+                year += 2000
+            parsed = _build_date(day, month, year, reference)
+            if parsed is not None:
+                return parsed
+
+        textual = re.search(
+            r"\b(\d{1,2})\s+"
+            r"(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|"
+            r"settembre|ottobre|novembre|dicembre)"
+            r"(?:\s+(\d{4}))?\b",
+            window,
+            flags=re.IGNORECASE,
+        )
+        if textual:
+            day = int(textual.group(1))
+            month = _ITALIAN_MONTHS[textual.group(2).lower()]
+            year = int(textual.group(3)) if textual.group(3) else None
+            parsed = _build_date(day, month, year, reference)
+            if parsed is not None:
+                return parsed
+
+    return None
 
 
 def parse_account_page(html: str) -> IliadData:
@@ -95,6 +172,12 @@ def parse_account_page(html: str) -> IliadData:
             used = _size_to_gb(match.group(1), match.group(2))
             break
 
+    fetched_at = datetime.now(timezone.utc)
+    renewal_date = _parse_renewal_date(
+        soup.get_text(" ", strip=True),
+        fetched_at.date(),
+    )
+
     if balance is None and used is None and remaining is None:
         raise IliadParseError("Nessun dato Iliad riconosciuto nella pagina account")
 
@@ -102,7 +185,8 @@ def parse_account_page(html: str) -> IliadData:
         balance_eur=balance,
         data_used_gb=used,
         data_remaining_gb=remaining,
-        fetched_at=datetime.now(timezone.utc),
+        renewal_date=renewal_date,
+        fetched_at=fetched_at,
     )
 
 
