@@ -4,6 +4,12 @@ Custom integration non ufficiale per Home Assistant che legge i dati dell'Area P
 
 > Stato: **testata con account Iliad reali**, inclusa la configurazione contemporanea di due SIM/account nella stessa istanza Home Assistant.
 
+## Versione corrente
+
+La prima release pubblica prevista è **v0.3.0**.
+
+Le versioni pubblicate tramite GitHub Releases diventano il riferimento per installazione e aggiornamento tramite HACS, così Home Assistant non deve dipendere direttamente dallo stato corrente del branch `main`.
+
 ## Funzioni
 
 Ogni account/SIM configurato crea un device separato con:
@@ -45,6 +51,22 @@ La repository è strutturata come custom repository HACS di tipo **Integration**
 5. Installa **Iliad Italia**.
 6. Riavvia Home Assistant.
 7. Vai in **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → Iliad Italia**.
+
+Quando viene pubblicata una nuova GitHub Release, HACS può rilevarla come aggiornamento installabile.
+
+## Ciclo di release
+
+Il repository contiene un workflow GitHub Actions dedicato alle release.
+
+Per pubblicare una versione:
+
+1. aggiorna `custom_components/iliad_ita/manifest.json` con la nuova versione;
+2. sposta le modifiche da `Unreleased` alla relativa sezione in `CHANGELOG.md`;
+3. verifica che il workflow **Validate** sia verde;
+4. apri **Actions → Release → Run workflow**;
+5. inserisci la versione senza prefisso `v`, per esempio `0.3.0`.
+
+Il workflow controlla che la versione richiesta coincida con quella del manifest, estrae automaticamente le note dal changelog e crea la release/tag `vX.Y.Z`.
 
 ## Installazione manuale
 
