@@ -6,6 +6,7 @@
   "config_flow": true,
   "documentation": "https://github.com/robertovendrame/ha-iliad-italia",
   "issue_tracker": "https://github.com/robertovendrame/ha-iliad-italia/issues",
+  "integration_type": "service",
   "iot_class": "cloud_polling",
   "requirements": ["beautifulsoup4==4.13.4"]
 }
