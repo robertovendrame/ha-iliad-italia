@@ -44,7 +44,14 @@
     "sensor": {
       "balance": {"name": "Credito"},
       "data_used": {"name": "Dati utilizzati"},
-      "data_remaining": {"name": "Dati residui"}
+      "data_remaining": {"name": "Dati residui"},
+      "data_total_calculated": {"name": "Dati totali calcolati"},
+      "data_used_percent": {"name": "Dati utilizzati percentuale"},
+      "data_remaining_percent": {"name": "Dati residui percentuale"},
+      "last_update": {"name": "Ultimo aggiornamento"}
+    },
+    "button": {
+      "refresh": {"name": "Aggiorna ora"}
     }
   }
 }
