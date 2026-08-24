@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Renewal-date parsing from the Iliad `Consumi e Credito` page without relying on a new hard-coded CSS selector.
+- `Data rinnovo` and `Giorni al rinnovo` sensors.
+- Estimated average daily data usage for the current offer period.
+- Daily data budget available until renewal.
+- Projected remaining data at renewal based on the current average usage pace.
+- `Rischio esaurimento prima del rinnovo` problem binary sensor.
+- Renewal date included in privacy-safe diagnostics.
+
+### Notes
+- Renewal parsing and all derived projection entities require real-world validation before the next release.
+- Projection values are estimates derived locally from current-period usage, remaining data and the monthly renewal date; they are not values provided directly by Iliad.
+
 ## [0.3.0] - 2026-08-24
 
 ### Added
