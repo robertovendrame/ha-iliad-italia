@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import re
 
 from aiohttp import ClientError, ClientSession
@@ -34,6 +35,7 @@ class IliadData:
     balance_eur: float | None
     data_used_gb: float | None
     data_remaining_gb: float | None
+    fetched_at: datetime
 
 
 def _decimal(value: str) -> float:
@@ -100,6 +102,7 @@ def parse_account_page(html: str) -> IliadData:
         balance_eur=balance,
         data_used_gb=used,
         data_remaining_gb=remaining,
+        fetched_at=datetime.now(timezone.utc),
     )
 
 
