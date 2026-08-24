@@ -8,6 +8,17 @@ on:
   workflow_dispatch:
 
 jobs:
+  python:
+    name: Python syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Compile integration
+        run: python -m compileall -q custom_components/iliad_ita
+
   hacs:
     name: HACS
     runs-on: ubuntu-latest
