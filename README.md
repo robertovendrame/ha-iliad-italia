@@ -6,9 +6,18 @@ Custom integration non ufficiale per Home Assistant che legge i dati dell'Area P
 
 ## Versione corrente
 
-La prima release pubblica prevista è **v0.3.0**.
+La prima release pubblica è **v0.3.0**.
 
-Le versioni pubblicate tramite GitHub Releases diventano il riferimento per installazione e aggiornamento tramite HACS, così Home Assistant non deve dipendere direttamente dallo stato corrente del branch `main`.
+Release:
+`https://github.com/robertovendrame/ha-iliad-italia/releases/tag/v0.3.0`
+
+Le versioni pubblicate tramite GitHub Releases sono il riferimento per installazione e aggiornamento tramite HACS, così Home Assistant non dipende direttamente dallo stato corrente del branch `main`.
+
+La repository è stata validata con:
+
+- controllo sintassi Python;
+- HACS Action;
+- Home Assistant Hassfest.
 
 ## Funzioni
 
@@ -54,17 +63,28 @@ La repository è strutturata come custom repository HACS di tipo **Integration**
 
 Quando viene pubblicata una nuova GitHub Release, HACS può rilevarla come aggiornamento installabile.
 
+## Aggiornamento tramite HACS
+
+Se l'integrazione è già installata tramite HACS:
+
+1. apri HACS;
+2. aggiorna le informazioni della repository se necessario;
+3. installa la nuova release proposta;
+4. riavvia Home Assistant quando richiesto.
+
+Le config entry e le SIM già configurate restano associate all'integrazione durante gli aggiornamenti.
+
 ## Ciclo di release
 
 Il repository contiene un workflow GitHub Actions dedicato alle release.
 
-Per pubblicare una versione:
+Per pubblicare una nuova versione:
 
 1. aggiorna `custom_components/iliad_ita/manifest.json` con la nuova versione;
 2. sposta le modifiche da `Unreleased` alla relativa sezione in `CHANGELOG.md`;
 3. verifica che il workflow **Validate** sia verde;
 4. apri **Actions → Release → Run workflow**;
-5. inserisci la versione senza prefisso `v`, per esempio `0.3.0`.
+5. inserisci la versione senza prefisso `v`, per esempio `0.3.1`.
 
 Il workflow controlla che la versione richiesta coincida con quella del manifest, estrae automaticamente le note dal changelog e crea la release/tag `vX.Y.Z`.
 
@@ -138,14 +158,6 @@ Il parser interpreta l'HTML della pagina e normalizza i valori di traffico in GB
 ## Compatibilità
 
 Sviluppata e testata con riferimento a Home Assistant 2026.8.x.
-
-## Validazione
-
-La repository contiene una GitHub Action che esegue:
-
-- controllo sintassi Python;
-- HACS Action, categoria `integration`;
-- Home Assistant Hassfest.
 
 ## Roadmap immediata
 
