@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-24
+
 ### Added
 - GitHub Actions validation with Python syntax check, HACS Action and Home Assistant Hassfest.
 - Reauthentication flow for expired or changed Iliad credentials.
@@ -32,8 +34,9 @@ All notable changes to this project will be documented in this file.
 - Login and account parsing with real Iliad credentials.
 - Credit, used-data and remaining-data retrieval.
 - Two distinct Iliad accounts working simultaneously in the same Home Assistant instance without session/cookie conflicts.
+- HACS and Hassfest validation passing before release.
 
-## [0.2.0] - release candidate
+## [0.2.0] - development milestone
 
 ### Added
 - UI configuration through Home Assistant config entries.
@@ -44,4 +47,5 @@ All notable changes to this project will be documented in this file.
 - Manual and HACS custom-repository installation structure.
 
 ### Notes
+- `0.2.0` was used as a development milestone before the first published release.
 - The current implementation parses the Iliad personal-area HTML and may require updates if Iliad changes the portal structure.
