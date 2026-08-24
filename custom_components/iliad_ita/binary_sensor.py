@@ -15,8 +15,10 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .api import IliadData
 from .const import (
+    CONF_CREDIT_THRESHOLD_EUR,
     CONF_DATA_THRESHOLD_GB,
     CONF_DATA_THRESHOLD_PERCENT,
+    DEFAULT_CREDIT_THRESHOLD_EUR,
     DEFAULT_DATA_THRESHOLD_GB,
     DEFAULT_DATA_THRESHOLD_PERCENT,
     DOMAIN,
@@ -27,6 +29,13 @@ LOW_DATA_DESCRIPTION = BinarySensorEntityDescription(
     key="low_data",
     translation_key="low_data",
     icon="mdi:database-alert-outline",
+    device_class=BinarySensorDeviceClass.PROBLEM,
+)
+
+LOW_CREDIT_DESCRIPTION = BinarySensorEntityDescription(
+    key="low_credit",
+    translation_key="low_credit",
+    icon="mdi:cash-alert",
     device_class=BinarySensorDeviceClass.PROBLEM,
 )
 
@@ -48,32 +57,49 @@ async def async_setup_entry(
 ) -> None:
     """Set up Iliad binary sensors."""
     coordinator: IliadDataUpdateCoordinator = entry.runtime_data
-    async_add_entities([IliadLowDataBinarySensor(coordinator, entry)])
+    async_add_entities(
+        [
+            IliadLowDataBinarySensor(coordinator, entry),
+            IliadLowCreditBinarySensor(coordinator, entry),
+        ]
+    )
 
 
-class IliadLowDataBinarySensor(
+class IliadBinarySensorBase(
     CoordinatorEntity[IliadDataUpdateCoordinator], BinarySensorEntity
 ):
-    """Indicate when remaining mobile data is below a configured threshold."""
+    """Base class for Iliad problem binary sensors."""
 
-    entity_description = LOW_DATA_DESCRIPTION
     _attr_has_entity_name = True
 
     def __init__(
         self,
         coordinator: IliadDataUpdateCoordinator,
         entry: ConfigEntry,
+        description: BinarySensorEntityDescription,
     ) -> None:
         super().__init__(coordinator)
         self._entry = entry
+        self.entity_description = description
         account_id = entry.unique_id or entry.entry_id
-        self._attr_unique_id = f"{account_id}_low_data"
+        self._attr_unique_id = f"{account_id}_{description.key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, account_id)},
             name=entry.title,
             manufacturer="Iliad Italia",
             model="SIM / account mobile",
         )
+
+
+class IliadLowDataBinarySensor(IliadBinarySensorBase):
+    """Indicate when remaining mobile data is below a configured threshold."""
+
+    def __init__(
+        self,
+        coordinator: IliadDataUpdateCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator, entry, LOW_DATA_DESCRIPTION)
 
     @property
     def is_on(self) -> bool | None:
@@ -105,7 +131,7 @@ class IliadLowDataBinarySensor(
 
     @property
     def extra_state_attributes(self) -> dict[str, float]:
-        """Expose active thresholds for dashboards and automations."""
+        """Expose active data thresholds for dashboards and automations."""
         return {
             "threshold_gb": float(
                 self._entry.options.get(
@@ -119,4 +145,41 @@ class IliadLowDataBinarySensor(
                     DEFAULT_DATA_THRESHOLD_PERCENT,
                 )
             ),
+        }
+
+
+class IliadLowCreditBinarySensor(IliadBinarySensorBase):
+    """Indicate when available credit is below the configured threshold."""
+
+    def __init__(
+        self,
+        coordinator: IliadDataUpdateCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator, entry, LOW_CREDIT_DESCRIPTION)
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true when available credit reaches the configured threshold."""
+        balance = self.coordinator.data.balance_eur
+        if balance is None:
+            return None
+        threshold = float(
+            self._entry.options.get(
+                CONF_CREDIT_THRESHOLD_EUR,
+                DEFAULT_CREDIT_THRESHOLD_EUR,
+            )
+        )
+        return balance <= threshold
+
+    @property
+    def extra_state_attributes(self) -> dict[str, float]:
+        """Expose the active credit threshold."""
+        return {
+            "threshold_eur": float(
+                self._entry.options.get(
+                    CONF_CREDIT_THRESHOLD_EUR,
+                    DEFAULT_CREDIT_THRESHOLD_EUR,
+                )
+            )
         }
