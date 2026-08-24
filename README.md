@@ -17,8 +17,25 @@ L'integrazione supporta:
 - più SIM/account Iliad nella stessa istanza Home Assistant;
 - installazione della stessa integrazione su più istanze Home Assistant;
 - configurazione da UI tramite `config_flow`;
+- riautenticazione quando le credenziali non sono più valide;
+- riconfigurazione del nome della SIM e delle credenziali;
+- sessioni/cookie separati per ogni account configurato;
 - aggiornamento cloud ogni 6 ore;
 - identificativi stabili senza esporre in chiaro l'ID Iliad negli `unique_id`.
+
+## Installazione tramite HACS — test
+
+La repository è già strutturata come custom repository HACS di tipo **Integration**.
+
+1. Apri HACS.
+2. Vai nelle repository personalizzate / **Custom repositories**.
+3. Aggiungi `https://github.com/robertovendrame/ha-iliad-italia`.
+4. Seleziona la categoria **Integration**.
+5. Installa **Iliad Italia**.
+6. Riavvia Home Assistant.
+7. Vai in **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → Iliad Italia**.
+
+Finché non viene completato il primo test reale, questa installazione va considerata sperimentale.
 
 ## Installazione manuale
 
@@ -42,9 +59,11 @@ Per ogni SIM inserisci:
 
 Le credenziali vengono salvate nella config entry di Home Assistant e non devono essere inserite nel repository.
 
-## HACS
+## Multi-SIM
 
-La repository è strutturata per essere usata come custom repository HACS di tipo **Integration**. Finché la prima versione non è stata testata con un account reale, è consigliata l'installazione manuale o l'uso HACS solo in ambiente di test.
+Ogni account Iliad usa una sessione HTTP con cookie dedicati. Questo evita che due SIM configurate nella stessa istanza Home Assistant condividano o sovrascrivano la sessione di autenticazione.
+
+Lo stesso account non può essere aggiunto due volte nella stessa istanza, mentre la stessa integrazione può essere usata su istanze Home Assistant differenti.
 
 ## Come funziona
 
@@ -57,6 +76,25 @@ Il parser interpreta l'HTML della pagina e normalizza i valori di traffico in GB
 ## Compatibilità
 
 Sviluppata con riferimento a Home Assistant 2026.8.x.
+
+## Validazione
+
+La repository contiene una GitHub Action che esegue:
+
+- HACS Action, categoria `integration`;
+- Home Assistant Hassfest.
+
+La presenza del workflow non sostituisce il test funzionale con un account Iliad reale. Prima della prima release stabile vanno verificati login, parsing dei consumi e comportamento multi-account.
+
+## Roadmap immediata
+
+Dopo il primo test reale verrà verificata la possibilità di aggiungere, se presenti nella pagina Iliad:
+
+- data di rinnovo;
+- offerta/piano;
+- plafond dati totale;
+- numero linea o altro identificativo utile;
+- eventuali soglie/stato rinnovo.
 
 ## Origine e attribuzione
 
