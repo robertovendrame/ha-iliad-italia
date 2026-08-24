@@ -1,4 +1,4 @@
-"""Config flow for Iliad Italia."""
+"""Config and options flows for Iliad Italia."""
 
 from __future__ import annotations
 
@@ -16,7 +16,19 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import IliadAuthError, IliadClient, IliadConnectionError, IliadParseError
-from .const import CONF_NAME, DEFAULT_NAME, DOMAIN
+from .const import (
+    CONF_DATA_THRESHOLD_GB,
+    CONF_DATA_THRESHOLD_PERCENT,
+    CONF_NAME,
+    CONF_UPDATE_INTERVAL_HOURS,
+    DEFAULT_DATA_THRESHOLD_GB,
+    DEFAULT_DATA_THRESHOLD_PERCENT,
+    DEFAULT_NAME,
+    DEFAULT_UPDATE_INTERVAL_HOURS,
+    DOMAIN,
+    MAX_UPDATE_INTERVAL_HOURS,
+    MIN_UPDATE_INTERVAL_HOURS,
+)
 
 
 def account_key(username: str) -> str:
@@ -169,4 +181,58 @@ class IliadConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+        )
+
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Return the options flow for an Iliad entry."""
+        return IliadOptionsFlow()
+
+
+class IliadOptionsFlow(config_entries.OptionsFlow):
+    """Configure per-SIM thresholds and polling interval."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage Iliad entry options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        options = self.config_entry.options
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_DATA_THRESHOLD_GB,
+                        default=options.get(
+                            CONF_DATA_THRESHOLD_GB,
+                            DEFAULT_DATA_THRESHOLD_GB,
+                        ),
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0, max=10000)),
+                    vol.Required(
+                        CONF_DATA_THRESHOLD_PERCENT,
+                        default=options.get(
+                            CONF_DATA_THRESHOLD_PERCENT,
+                            DEFAULT_DATA_THRESHOLD_PERCENT,
+                        ),
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
+                    vol.Required(
+                        CONF_UPDATE_INTERVAL_HOURS,
+                        default=options.get(
+                            CONF_UPDATE_INTERVAL_HOURS,
+                            DEFAULT_UPDATE_INTERVAL_HOURS,
+                        ),
+                    ): vol.All(
+                        vol.Coerce(int),
+                        vol.Range(
+                            min=MIN_UPDATE_INTERVAL_HOURS,
+                            max=MAX_UPDATE_INTERVAL_HOURS,
+                        ),
+                    ),
+                }
+            ),
         )
