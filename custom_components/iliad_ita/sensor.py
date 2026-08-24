@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import calendar
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from typing import Callable
 
 from homeassistant.components.sensor import (
@@ -13,17 +14,18 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, UnitOfInformation
+from homeassistant.const import PERCENTAGE, UnitOfInformation, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .api import IliadData
 from .const import DOMAIN
 from .coordinator import IliadDataUpdateCoordinator
 
-SensorValue = float | datetime | None
+SensorValue = float | int | date | datetime | None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -51,6 +53,52 @@ def _remaining_percent(data: IliadData) -> float | None:
     if total is None or total <= 0 or data.data_remaining_gb is None:
         return None
     return (data.data_remaining_gb / total) * 100
+
+
+def _previous_month_same_day(value: date) -> date:
+    year = value.year
+    month = value.month - 1
+    if month == 0:
+        month = 12
+        year -= 1
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _days_until_renewal(data: IliadData) -> int | None:
+    if data.renewal_date is None:
+        return None
+    return (data.renewal_date - dt_util.now().date()).days
+
+
+def _average_daily_usage(data: IliadData) -> float | None:
+    if data.renewal_date is None or data.data_used_gb is None:
+        return None
+    today = dt_util.now().date()
+    cycle_start = _previous_month_same_day(data.renewal_date)
+    elapsed_days = (today - cycle_start).days
+    if elapsed_days <= 0:
+        return None
+    return data.data_used_gb / elapsed_days
+
+
+def _daily_budget_to_renewal(data: IliadData) -> float | None:
+    if data.data_remaining_gb is None:
+        return None
+    days = _days_until_renewal(data)
+    if days is None or days <= 0:
+        return None
+    return data.data_remaining_gb / days
+
+
+def _projected_remaining_at_renewal(data: IliadData) -> float | None:
+    if data.data_remaining_gb is None:
+        return None
+    days = _days_until_renewal(data)
+    average = _average_daily_usage(data)
+    if days is None or days < 0 or average is None:
+        return None
+    return data.data_remaining_gb - (average * days)
 
 
 SENSORS: tuple[IliadSensorEntityDescription, ...] = (
@@ -109,6 +157,50 @@ SENSORS: tuple[IliadSensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         suggested_display_precision=1,
         value_fn=_remaining_percent,
+    ),
+    IliadSensorEntityDescription(
+        key="renewal_date",
+        translation_key="renewal_date",
+        icon="mdi:calendar-refresh",
+        device_class=SensorDeviceClass.DATE,
+        value_fn=lambda data: data.renewal_date,
+    ),
+    IliadSensorEntityDescription(
+        key="days_until_renewal",
+        translation_key="days_until_renewal",
+        icon="mdi:calendar-clock",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        suggested_display_precision=0,
+        value_fn=_days_until_renewal,
+    ),
+    IliadSensorEntityDescription(
+        key="average_daily_usage",
+        translation_key="average_daily_usage",
+        icon="mdi:speedometer",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="GB/day",
+        suggested_display_precision=2,
+        value_fn=_average_daily_usage,
+    ),
+    IliadSensorEntityDescription(
+        key="daily_budget_to_renewal",
+        translation_key="daily_budget_to_renewal",
+        icon="mdi:chart-timeline-variant",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="GB/day",
+        suggested_display_precision=2,
+        value_fn=_daily_budget_to_renewal,
+    ),
+    IliadSensorEntityDescription(
+        key="projected_remaining_at_renewal",
+        translation_key="projected_remaining_at_renewal",
+        icon="mdi:chart-line",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        suggested_display_precision=2,
+        value_fn=_projected_remaining_at_renewal,
     ),
     IliadSensorEntityDescription(
         key="last_update",
