@@ -1,4 +1,6 @@
 {
   "name": "Iliad Italia",
-  "render_readme": true
+  "render_readme": true,
+  "country": ["IT"],
+  "homeassistant": "2026.8.0"
 }
