@@ -62,7 +62,7 @@ def test_parse_realistic_offer_page() -> None:
 def test_renewal_falls_back_to_day_after_period_end() -> None:
     html = REALISTIC_HTML.replace(
         "Si rinnova il 03/09/2026 alle 00:00 a 14.99€",
-        "Rinnovo non esposto nel markup statico",
+        "Dettaglio offerta mobile",
     )
     data = api.parse_account_page(html)
     assert data.renewal_date == date(2026, 9, 3)
