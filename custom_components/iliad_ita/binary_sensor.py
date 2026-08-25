@@ -62,7 +62,7 @@ def _remaining_percent(data: IliadData) -> float | None:
 
 
 def _previous_month_same_day(value: date) -> date:
-    """Infer the previous monthly renewal date."""
+    """Infer the previous monthly renewal date as a fallback."""
     year = value.year
     month = value.month - 1
     if month == 0:
@@ -70,6 +70,15 @@ def _previous_month_same_day(value: date) -> date:
         year -= 1
     day = min(value.day, calendar.monthrange(year, month)[1])
     return date(year, month, day)
+
+
+def _cycle_start(data: IliadData) -> date | None:
+    """Return the real reference-period start, with a legacy fallback."""
+    if data.period_start is not None:
+        return data.period_start
+    if data.renewal_date is not None:
+        return _previous_month_same_day(data.renewal_date)
+    return None
 
 
 def _projected_remaining_at_renewal(data: IliadData) -> float | None:
@@ -86,7 +95,9 @@ def _projected_remaining_at_renewal(data: IliadData) -> float | None:
     if days_remaining < 0:
         return None
 
-    cycle_start = _previous_month_same_day(data.renewal_date)
+    cycle_start = _cycle_start(data)
+    if cycle_start is None:
+        return None
     elapsed_days = (today - cycle_start).days
     if elapsed_days <= 0:
         return None
@@ -255,6 +266,8 @@ class IliadProjectedDataExhaustionBinarySensor(IliadBinarySensorBase):
         data = self.coordinator.data
         projected = _projected_remaining_at_renewal(data)
         return {
+            "period_start": data.period_start.isoformat() if data.period_start else None,
+            "period_end": data.period_end.isoformat() if data.period_end else None,
             "renewal_date": data.renewal_date.isoformat() if data.renewal_date else None,
             "projected_remaining_gb": projected,
         }
