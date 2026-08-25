@@ -150,28 +150,69 @@ def _parse_renewal_date(text: str, reference: date, period_end: date | None = No
     return period_end + timedelta(days=1) if period_end is not None else None
 
 
+def _normalize_offer_candidate(text: str) -> str | None:
+    """Extract and normalize an offer-like label from a DOM text fragment."""
+    normalized = " ".join(text.split())
+    if not re.search(r"\bofferta\b", normalized, flags=re.IGNORECASE):
+        return None
+
+    candidate = re.split(
+        r"\s*(?:[•·|]|Credito\s*:|Si\s+rinnova\b|Periodo\s+di\s+riferimento\b)",
+        normalized,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )[0].strip(" :-–—")
+
+    match = re.search(r"\bOfferta\b(?:\s+[^•·|]{1,90})?", candidate, flags=re.IGNORECASE)
+    if not match:
+        return None
+
+    value = " ".join(match.group(0).split()).strip(" :-–—")
+    if not 3 < len(value) <= 100:
+        return None
+    return value
+
+
+def _offer_candidate_score(value: str) -> int:
+    """Prefer specific commercial names over generic portal labels."""
+    lower = value.casefold()
+    score = 0
+    if re.search(r"\d", value):
+        score += 8
+    if "dati" in lower or "giga" in lower or "gb" in lower:
+        score += 5
+    if len(value.split()) >= 3:
+        score += 2
+    if lower in {"offerta", "offerta mobile", "la tua offerta", "dettaglio offerta mobile"}:
+        score -= 20
+    elif "mobile" in lower and not re.search(r"\d", value):
+        score -= 5
+    return score
+
+
 def _parse_offer_name_from_dom(soup: BeautifulSoup) -> str | None:
-    """Read the offer label from the smallest DOM text node that contains it."""
+    """Select the most specific offer label exposed by the page DOM."""
+    candidates: set[str] = set()
+
     for text_node in soup.find_all(string=re.compile(r"\bofferta\b", re.IGNORECASE)):
-        text = " ".join(str(text_node).split())
-        if not text:
-            continue
+        value = _normalize_offer_candidate(str(text_node))
+        if value:
+            candidates.add(value)
 
-        # Keep only the offer label when other account labels share the same node.
-        candidate = re.split(
-            r"\s*(?:[•·|]|Credito\s*:|Si\s+rinnova\b|Periodo\s+di\s+riferimento\b)",
-            text,
-            maxsplit=1,
-            flags=re.IGNORECASE,
-        )[0].strip(" :-–—")
+        parent = text_node.parent
+        for _ in range(3):
+            if parent is None:
+                break
+            value = _normalize_offer_candidate(parent.get_text(" ", strip=True))
+            if value:
+                candidates.add(value)
+            parent = parent.parent
 
-        match = re.search(r"\bOfferta\s+.+", candidate, flags=re.IGNORECASE)
-        if match:
-            value = " ".join(match.group(0).split()).strip(" :-–—")
-            if 3 < len(value) <= 100:
-                return value
+    if not candidates:
+        return None
 
-    return None
+    best = max(candidates, key=lambda value: (_offer_candidate_score(value), len(value)))
+    return best if _offer_candidate_score(best) >= 0 else None
 
 
 def _parse_offer_metadata(text: str) -> tuple[str | None, float | None, float | None]:
