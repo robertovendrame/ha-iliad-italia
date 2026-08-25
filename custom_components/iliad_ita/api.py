@@ -36,6 +36,8 @@ class IliadData:
     data_used_gb: float | None
     data_remaining_gb: float | None
     renewal_date: date | None
+    period_start: date | None
+    period_end: date | None
     fetched_at: datetime
 
 
@@ -74,6 +76,14 @@ _ITALIAN_MONTHS = {
     "dicembre": 12,
 }
 
+_TEXTUAL_DATE_RE = re.compile(
+    r"\b(\d{1,2})\s+"
+    r"(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|"
+    r"settembre|ottobre|novembre|dicembre)"
+    r"(?:\s+(\d{4}))?\b",
+    flags=re.IGNORECASE,
+)
+
 
 def _build_date(day: int, month: int, year: int | None, reference: date) -> date | None:
     """Build a date and infer the year when Iliad omits it."""
@@ -94,14 +104,7 @@ def _build_date(day: int, month: int, year: int | None, reference: date) -> date
 
 def _parse_textual_date(text: str, reference: date) -> date | None:
     """Parse an Italian textual date such as '02 Settembre 2026'."""
-    match = re.search(
-        r"\b(\d{1,2})\s+"
-        r"(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|"
-        r"settembre|ottobre|novembre|dicembre)"
-        r"(?:\s+(\d{4}))?\b",
-        text,
-        flags=re.IGNORECASE,
-    )
+    match = _TEXTUAL_DATE_RE.search(text)
     if not match:
         return None
 
@@ -111,7 +114,35 @@ def _parse_textual_date(text: str, reference: date) -> date | None:
     return _build_date(day, month, year, reference)
 
 
-def _parse_renewal_date(text: str, reference: date) -> date | None:
+def _parse_reference_period(text: str, reference: date) -> tuple[date | None, date | None]:
+    """Parse 'Periodo di riferimento dal <date> al <date>' from Iliad."""
+    normalized = " ".join(text.split())
+    marker = re.search(
+        r"periodo\s+di\s+riferimento\s+dal\s+",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if not marker:
+        return None, None
+
+    window = normalized[marker.end() : marker.end() + 180]
+    matches = list(_TEXTUAL_DATE_RE.finditer(window))
+    if len(matches) < 2:
+        return None, None
+
+    period_start = _parse_textual_date(matches[0].group(0), reference)
+    period_end = _parse_textual_date(matches[1].group(0), reference)
+    if period_start is None or period_end is None or period_end < period_start:
+        return None, None
+
+    return period_start, period_end
+
+
+def _parse_renewal_date(
+    text: str,
+    reference: date,
+    period_end: date | None = None,
+) -> date | None:
     """Find the renewal date, with a fallback from the reference period end."""
     normalized = " ".join(text.split())
 
@@ -140,37 +171,10 @@ def _parse_renewal_date(text: str, reference: date) -> date | None:
         if parsed is not None:
             return parsed
 
-    # Fallback observed on the real Iliad page: the current offer period is shown as
-    # 'Periodo di riferimento dal <date> al <date>'. Renewal is the following day.
-    period_match = re.search(
-        r"periodo\s+di\s+riferimento\s+dal\s+(.{1,40}?)\s+al\s+(.{1,40}?)(?=\s{2,}|\s+(?:chiamate|sms|dati|mms|credito|ricarica)|$)",
-        normalized,
-        flags=re.IGNORECASE,
-    )
-    if period_match:
-        period_end = _parse_textual_date(period_match.group(2), reference)
-        if period_end is not None:
-            return period_end + timedelta(days=1)
-
-    # More tolerant fallback when nearby text prevents the stricter match above.
-    period_start = re.search(
-        r"periodo\s+di\s+riferimento\s+dal\s+",
-        normalized,
-        flags=re.IGNORECASE,
-    )
-    if period_start:
-        window = normalized[period_start.end() : period_start.end() + 140]
-        dates = list(
-            re.finditer(
-                r"\b\d{1,2}\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)(?:\s+\d{4})?\b",
-                window,
-                flags=re.IGNORECASE,
-            )
-        )
-        if len(dates) >= 2:
-            period_end = _parse_textual_date(dates[1].group(0), reference)
-            if period_end is not None:
-                return period_end + timedelta(days=1)
+    # Real Iliad pages expose the offer reference period. Renewal is the day
+    # immediately following the period end.
+    if period_end is not None:
+        return period_end + timedelta(days=1)
 
     return None
 
@@ -213,9 +217,12 @@ def parse_account_page(html: str) -> IliadData:
             break
 
     fetched_at = datetime.now(timezone.utc)
+    page_text = soup.get_text(" ", strip=True)
+    period_start, period_end = _parse_reference_period(page_text, fetched_at.date())
     renewal_date = _parse_renewal_date(
-        soup.get_text(" ", strip=True),
+        page_text,
         fetched_at.date(),
+        period_end,
     )
 
     if balance is None and used is None and remaining is None:
@@ -226,6 +233,8 @@ def parse_account_page(html: str) -> IliadData:
         data_used_gb=used,
         data_remaining_gb=remaining,
         renewal_date=renewal_date,
+        period_start=period_start,
+        period_end=period_end,
         fetched_at=fetched_at,
     )
 
