@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0-beta.3] - 2026-08-25
+
+### Fixed
+- Real-world validation of beta.2 showed the offer sensor resolving to the generic portal label `offerta mobile` instead of the commercial offer name.
+- Offer parsing now collects multiple DOM candidates and scores them, preferring specific labels containing plan details/numbers over generic navigation labels such as `offerta mobile`.
+- Parent DOM nodes are inspected so split markup such as `Offerta` + `Dati 350` can still resolve to `Offerta Dati 350`.
+- Added a regression test where a generic `offerta mobile` label appears before a split `Offerta Dati 350` heading.
+
+### Validated
+- On the real beta.2 test account, `Plafond dati` = `350 GB` and `Costo offerta` = `14.99 EUR` remain correct; only offer-name selection required this fix.
+
 ## [0.5.0-beta.2] - 2026-08-25
 
 ### Fixed
