@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-25
+
+### Added
+- Renewal-date parsing from the Iliad `Consumi e Credito` page.
+- Direct parsing of the real Iliad `Periodo di riferimento dal ... al ...` start and end dates.
+- `Data rinnovo`, `Giorni al rinnovo`, `Inizio periodo` and `Fine periodo` sensors.
+- Estimated average daily data usage for the current offer period.
+- Daily data budget available until renewal.
+- Projected remaining data at renewal based on the current usage pace.
+- `Rischio esaurimento prima del rinnovo` problem binary sensor.
+- Renewal date and reference-period dates included in privacy-safe diagnostics.
+
+### Changed
+- Average daily usage and projected remaining data now use the real Iliad reference-period start date when available.
+- The previous-month calculation is retained only as a compatibility fallback when the reference period cannot be parsed.
+- Renewal-date fallback derives renewal as the day after the parsed reference-period end date when the explicit renewal date is not available in the static HTML.
+
+### Validated
+- Renewal and reference-period parsing confirmed with two real Iliad accounts in the same Home Assistant instance.
+- Account 1 confirmed with reference period `02/08/2026` to `02/09/2026` and renewal `03/09/2026`.
+- Account 2 confirmed with reference period `09/08/2026` to `09/09/2026` and renewal `10/09/2026`.
+- Projection entities populate correctly on both tested accounts.
+
+### Notes
+- Projection values are estimates derived locally from current usage, remaining data and the current reference period; they are not values provided directly by Iliad.
+
 ## [0.4.0-beta.3] - 2026-08-25
 
 ### Added
@@ -19,20 +45,11 @@ All notable changes to this project will be documented in this file.
 ### Validated
 - Real Iliad page observed with `Periodo di riferimento dal 02 Agosto 2026 al 02 Settembre 2026` and renewal on `03/09/2026`.
 
-### Notes
-- This beta is intended to validate the two new period sensors and confirm that projections continue to match real account data.
-
 ## [0.4.0-beta.2] - 2026-08-25
 
 ### Fixed
 - Added a second renewal-date strategy based on the real Iliad `Periodo di riferimento dal ... al ...` text.
 - When the explicit `Si rinnova il ...` date is not present in the static HTML, the integration now derives the renewal date as the day after the current reference-period end date.
-
-### Validated
-- Real Iliad page observed with renewal date `03/09/2026` and reference period ending `02 Settembre 2026`; the new fallback is designed specifically for this real page structure.
-
-### Notes
-- This remains a beta release until the fallback is confirmed in Home Assistant with real account data.
 
 ## [0.4.0-beta.1] - 2026-08-24
 
@@ -44,11 +61,6 @@ All notable changes to this project will be documented in this file.
 - Projected remaining data at renewal based on the current average usage pace.
 - `Rischio esaurimento prima del rinnovo` problem binary sensor.
 - Renewal date included in privacy-safe diagnostics.
-
-### Notes
-- This is a beta release intended for real-world validation of renewal-date parsing and projection entities.
-- Projection values are estimates derived locally from current-period usage, remaining data and the monthly renewal date; they are not values provided directly by Iliad.
-- If the renewal date is not recognized, the renewal/projection entities may be unavailable while the existing credit and traffic sensors continue to work.
 
 ## [0.3.0] - 2026-08-24
 
