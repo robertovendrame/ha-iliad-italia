@@ -65,6 +65,15 @@ def _previous_month_same_day(value: date) -> date:
     return date(year, month, day)
 
 
+def _cycle_start(data: IliadData) -> date | None:
+    """Return the real Iliad reference-period start, with legacy fallback."""
+    if data.period_start is not None:
+        return data.period_start
+    if data.renewal_date is not None:
+        return _previous_month_same_day(data.renewal_date)
+    return None
+
+
 def _days_until_renewal(data: IliadData) -> int | None:
     if data.renewal_date is None:
         return None
@@ -72,10 +81,12 @@ def _days_until_renewal(data: IliadData) -> int | None:
 
 
 def _average_daily_usage(data: IliadData) -> float | None:
-    if data.renewal_date is None or data.data_used_gb is None:
+    if data.data_used_gb is None:
         return None
     today = dt_util.now().date()
-    cycle_start = _previous_month_same_day(data.renewal_date)
+    cycle_start = _cycle_start(data)
+    if cycle_start is None:
+        return None
     elapsed_days = (today - cycle_start).days
     if elapsed_days <= 0:
         return None
@@ -157,6 +168,20 @@ SENSORS: tuple[IliadSensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         suggested_display_precision=1,
         value_fn=_remaining_percent,
+    ),
+    IliadSensorEntityDescription(
+        key="period_start",
+        translation_key="period_start",
+        icon="mdi:calendar-start",
+        device_class=SensorDeviceClass.DATE,
+        value_fn=lambda data: data.period_start,
+    ),
+    IliadSensorEntityDescription(
+        key="period_end",
+        translation_key="period_end",
+        icon="mdi:calendar-end",
+        device_class=SensorDeviceClass.DATE,
+        value_fn=lambda data: data.period_end,
     ),
     IliadSensorEntityDescription(
         key="renewal_date",
