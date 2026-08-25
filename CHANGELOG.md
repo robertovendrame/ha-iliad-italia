@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0-beta.1] - 2026-08-25
+
+### Added
+- Offer-name parsing from the real Iliad account page.
+- Official data allowance parsing from the `used / total` traffic value.
+- Offer renewal price parsing from the `Si rinnova ... a ... €` text.
+- New `Offerta`, `Plafond dati` and `Costo offerta` sensors.
+- Offer metadata included in privacy-safe diagnostics.
+- Parser regression tests with anonymized realistic HTML fixtures.
+- Automatic `pytest` execution in the GitHub Actions validation workflow.
+- GitHub issue forms for bug reports and feature requests, including privacy guidance.
+
+### Changed
+- Data-used and data-remaining percentages now prefer the official Iliad allowance when it is available, falling back to `used + remaining` for older or unsupported page layouts.
+- `Dati totali calcolati` is kept as a separate compatibility/diagnostic value and is no longer the preferred denominator when an official allowance is parsed.
+
+### Notes
+- This beta requires real-world validation of offer name, official allowance and renewal price across the two already configured test accounts.
+- The parser keeps the previous behavior when the new commercial metadata is not present in the HTML.
+
 ## [0.4.0] - 2026-08-25
 
 ### Added
