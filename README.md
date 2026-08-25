@@ -4,192 +4,139 @@ Custom integration non ufficiale per Home Assistant che legge i dati dell'Area P
 
 > Stato: **testata con account Iliad reali**, inclusa la configurazione contemporanea di due SIM/account nella stessa istanza Home Assistant.
 
-## Versione corrente
+## Versioni
 
-La versione stabile preparata è **v0.4.0**.
+- stabile: **v0.4.0**
+- sviluppo/test: **v0.5.0-beta.1**
 
-Le versioni pubblicate tramite GitHub Releases sono il riferimento per installazione e aggiornamento tramite HACS, così Home Assistant non dipende direttamente dallo stato corrente del branch `main`.
-
-La repository viene validata con:
-
-- controllo sintassi Python;
-- HACS Action;
-- Home Assistant Hassfest.
+Le GitHub Releases sono il riferimento per installazione e aggiornamento tramite HACS. Le versioni `alpha`, `beta` e `rc` vengono pubblicate come pre-release.
 
 ## Funzioni
 
-Ogni account/SIM configurato crea un device separato con:
+Ogni account/SIM crea un device separato con:
 
-- Credito disponibile (`EUR`)
-- Dati utilizzati (`GB`)
-- Dati residui (`GB`)
-- Dati totali calcolati (`GB`), ottenuti come usati + residui
-- Percentuale dati utilizzati
-- Percentuale dati residui
-- Data rinnovo
-- Giorni al rinnovo
-- Inizio periodo di riferimento
-- Fine periodo di riferimento
-- Consumo medio giornaliero stimato
-- Budget dati giornaliero fino al rinnovo
-- Dati previsti al rinnovo
-- Binary sensor **Rischio esaurimento prima del rinnovo**
-- Binary sensor **Dati in esaurimento**
-- Binary sensor **Credito basso**
-- Ultimo aggiornamento riuscito
-- Pulsante **Aggiorna ora** per forzare un refresh immediato
+- nome offerta/piano quando riconosciuto;
+- costo dell'offerta al rinnovo;
+- credito disponibile;
+- plafond dati ufficiale quando presente nella pagina Iliad;
+- dati utilizzati e residui;
+- dati totali calcolati (`usati + residui`) come valore di compatibilità/diagnostica;
+- percentuale dati utilizzati e residui;
+- data rinnovo e giorni al rinnovo;
+- inizio e fine periodo di riferimento;
+- consumo medio giornaliero stimato;
+- budget dati giornaliero fino al rinnovo;
+- dati previsti al rinnovo;
+- binary sensor **Rischio esaurimento prima del rinnovo**;
+- binary sensor **Dati in esaurimento**;
+- binary sensor **Credito basso**;
+- ultimo aggiornamento riuscito;
+- pulsante **Aggiorna ora**.
 
-L'integrazione supporta:
-
-- più SIM/account Iliad nella stessa istanza Home Assistant;
-- installazione della stessa integrazione su più istanze Home Assistant;
-- configurazione da UI tramite `config_flow`;
-- riautenticazione quando le credenziali non sono più valide;
-- riconfigurazione del nome della SIM e delle credenziali;
-- sessioni/cookie separati per ogni account configurato;
-- intervallo di aggiornamento configurabile per ogni SIM da **1 a 24 ore**;
-- refresh manuale per singola SIM;
-- soglie dati configurabili per ogni SIM;
-- soglia credito configurabile per ogni SIM;
-- diagnostica Home Assistant senza username o password;
-- identificativi stabili senza esporre in chiaro l'ID Iliad negli `unique_id`.
+Quando il plafond ufficiale è disponibile, le percentuali vengono calcolate su quel valore; in caso contrario l'integrazione usa `dati usati + dati residui` come fallback.
 
 ## Installazione tramite HACS
 
-La repository è strutturata come custom repository HACS di tipo **Integration**.
-
 1. Apri HACS.
-2. Vai nelle repository personalizzate / **Custom repositories**.
-3. Aggiungi `https://github.com/robertovendrame/ha-iliad-italia`.
-4. Seleziona la categoria **Integration**.
-5. Installa **Iliad Italia**.
-6. Riavvia Home Assistant.
-7. Vai in **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → Iliad Italia**.
+2. Vai in **Custom repositories**.
+3. Aggiungi `https://github.com/robertovendrame/ha-iliad-italia` come **Integration**.
+4. Installa **Iliad Italia**.
+5. Riavvia Home Assistant.
+6. Vai in **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → Iliad Italia**.
 
-Quando viene pubblicata una nuova GitHub Release, HACS può rilevarla come aggiornamento installabile.
-
-## Aggiornamento tramite HACS
-
-Se l'integrazione è già installata tramite HACS:
-
-1. apri HACS;
-2. aggiorna le informazioni della repository se necessario;
-3. installa la nuova release proposta;
-4. riavvia Home Assistant quando richiesto.
-
-Le config entry e le SIM già configurate restano associate all'integrazione durante gli aggiornamenti.
-
-## Ciclo di release
-
-Il repository contiene un workflow GitHub Actions dedicato alle release.
-
-Per pubblicare una nuova versione:
-
-1. aggiorna `custom_components/iliad_ita/manifest.json` con la nuova versione;
-2. sposta le modifiche da `Unreleased` alla relativa sezione in `CHANGELOG.md`;
-3. verifica che il workflow **Validate** sia verde;
-4. apri **Actions → Release → Run workflow**;
-5. inserisci la versione senza prefisso `v`, per esempio `0.4.0`.
-
-Il workflow controlla che la versione richiesta coincida con quella del manifest, estrae automaticamente le note dal changelog e crea la release/tag `vX.Y.Z`. Le versioni con suffisso `alpha`, `beta` o `rc` vengono pubblicate come pre-release.
-
-## Installazione manuale
-
-Copia la cartella:
-
-`custom_components/iliad_ita`
-
-in:
-
-`/config/custom_components/iliad_ita`
-
-Riavvia Home Assistant e vai in:
-
-**Impostazioni → Dispositivi e servizi → Aggiungi integrazione → Iliad Italia**
-
-Per ogni SIM inserisci:
-
-- un nome libero, ad esempio `SIM Casetta`, `SIM Lavoro`, `SIM Backup`;
-- ID utente Iliad;
-- password Iliad.
-
-Le credenziali vengono salvate nella config entry di Home Assistant e non devono essere inserite nel repository.
+Per provare una beta, abilita le pre-release per la repository HACS e scegli la versione desiderata.
 
 ## Multi-SIM
 
-Ogni account Iliad usa una sessione HTTP con cookie dedicati. Questo evita che due SIM configurate nella stessa istanza Home Assistant condividano o sovrascrivano la sessione di autenticazione.
+Ogni account Iliad usa una sessione HTTP e un cookie jar dedicati. Questo evita conflitti tra più SIM configurate nella stessa istanza Home Assistant.
 
-Il comportamento multi-SIM è stato verificato con due account Iliad reali contemporaneamente nella stessa istanza Home Assistant.
-
-Lo stesso account non può essere aggiunto due volte nella stessa istanza, mentre la stessa integrazione può essere usata su istanze Home Assistant differenti.
+Il comportamento multi-SIM è stato verificato con due account Iliad reali contemporaneamente.
 
 ## Rinnovo, periodo e proiezioni
 
-L'integrazione legge dalla pagina Iliad il periodo di riferimento reale e, quando disponibile, la data di rinnovo. Se la data di rinnovo non è presente nell'HTML statico ma il periodo è riconosciuto, il rinnovo viene derivato come giorno successivo alla fine del periodo.
+L'integrazione legge il periodo di riferimento reale dalla pagina Iliad. Quando la data di rinnovo esplicita non è disponibile nell'HTML statico, viene derivata come giorno successivo alla fine del periodo.
 
-Il consumo medio giornaliero usa l'inizio reale del periodo di riferimento. Il budget giornaliero indica quanti GB al giorno sono disponibili fino al rinnovo. La previsione dei dati al rinnovo applica il consumo medio corrente ai giorni ancora disponibili.
+Il consumo medio giornaliero usa l'inizio reale del periodo. Il budget giornaliero divide i GB residui per i giorni mancanti al rinnovo. La previsione dei dati residui al rinnovo applica il consumo medio corrente ai giorni rimanenti.
 
-Il binary sensor **Rischio esaurimento prima del rinnovo** passa a problema quando la proiezione dei dati residui al rinnovo scende sotto zero.
-
-Questi valori previsionali sono calcolati localmente e non sono forniti direttamente da Iliad.
-
-La lettura di periodo e rinnovo è stata validata con due account reali con periodi e date di rinnovo differenti.
+Queste proiezioni sono calcolate localmente e non sono valori forniti direttamente da Iliad.
 
 ## Opzioni per ogni SIM
 
-Apri l'integrazione in **Impostazioni → Dispositivi e servizi**, seleziona la SIM e apri **Configura**.
+Da **Impostazioni → Dispositivi e servizi → Iliad Italia → Configura** puoi impostare:
 
-Sono disponibili quattro opzioni indipendenti per ogni account:
+- soglia dati residui in GB, default `10 GB`;
+- soglia dati residui in %, default `10%`;
+- soglia credito, default `5 €`;
+- intervallo aggiornamento da `1` a `24` ore, default `6`.
 
-- **Soglia dati residui (GB)** — default `10 GB`;
-- **Soglia dati residui (%)** — default `10%`;
-- **Soglia credito (€)** — default `5 €`;
-- **Intervallo aggiornamento (ore)** — default `6`, configurabile da `1` a `24` ore.
+## Diagnostica e privacy
 
-Il binary sensor **Dati in esaurimento** passa a `on` quando viene raggiunta **almeno una** delle due soglie dati configurate: GB residui oppure percentuale residua.
+Home Assistant può esportare la diagnostica della config entry con stato del coordinator, opzioni e valori parsati, inclusi offerta, plafond, periodo e rinnovo.
 
-Il binary sensor **Credito basso** passa a `on` quando il credito disponibile è minore o uguale alla soglia configurata.
+La diagnostica **non include ID utente Iliad o password**. Nei bug report non devono essere pubblicati cookie, credenziali o HTML non anonimizzato.
 
-Le soglie correnti sono esposte anche come attributi dei binary sensor, così possono essere usate facilmente in dashboard e automazioni.
+## Test automatici
 
-## Dati calcolati
+La pipeline **Validate** esegue:
 
-`Dati totali calcolati`, `Dati utilizzati percentuale` e `Dati residui percentuale` sono valori derivati localmente da Home Assistant a partire dai dati usati e residui restituiti dall'Area Personale Iliad. Non sono valori aggiuntivi forniti direttamente da Iliad.
+- compilazione Python;
+- test automatici `pytest` del parser su HTML realistico anonimizzato;
+- HACS Action;
+- Home Assistant Hassfest.
 
-## Diagnostica
+I test coprono almeno:
 
-Home Assistant può generare i dati diagnostici della singola config entry. La diagnostica include stato del coordinator, intervallo configurato, opzioni, dati di consumo, rinnovo e periodo di riferimento, ma **non include ID utente Iliad o password**.
+- credito, dati usati e residui;
+- nome offerta;
+- plafond ufficiale;
+- costo offerta;
+- periodo di riferimento;
+- rinnovo esplicito e fallback dal termine del periodo;
+- compatibilità con pagine senza i nuovi metadati commerciali.
+
+## Segnalazioni
+
+La repository include moduli GitHub dedicati per:
+
+- **Bug report**, con richiesta di versione HA/integrazione e diagnostica privacy-safe;
+- **Feature request**, con indicazione del dato Iliad e del caso d'uso in Home Assistant.
 
 ## Come funziona
 
-La versione corrente non usa API Iliad pubbliche documentate. Effettua il login all'Area Personale e legge la pagina:
+La versione corrente non usa API Iliad pubbliche documentate. Effettua il login all'Area Personale e legge:
 
 `https://www.iliad.it/account/consumi-e-credito`
 
-Il parser interpreta l'HTML della pagina e normalizza i valori di traffico in GB. Modifiche al portale Iliad possono quindi richiedere un aggiornamento dell'integrazione.
+Il parser interpreta l'HTML della pagina. Modifiche al portale Iliad possono quindi richiedere un aggiornamento dell'integrazione.
 
 ## Compatibilità
 
 Sviluppata e testata con riferimento a Home Assistant 2026.8.x.
 
-## Roadmap immediata
+## Ciclo di release
 
-Prossimi dati/funzioni da valutare, **solo se recuperabili in modo affidabile dalla pagina Iliad reale**:
+1. aggiorna `custom_components/iliad_ita/manifest.json`;
+2. aggiorna `CHANGELOG.md`;
+3. verifica che **Validate** sia verde;
+4. apri **Actions → Release → Run workflow**;
+5. inserisci la versione senza prefisso `v`.
 
-- nome offerta/piano;
-- plafond dati ufficiale;
-- costo dell'offerta;
-- numero linea o altro identificativo utile;
-- ulteriori dati di traffico e consumo realmente disponibili nel portale.
+Il workflow verifica la corrispondenza con il manifest, estrae le note dal changelog e crea tag e GitHub Release. Versioni `alpha`, `beta` e `rc` vengono marcate come pre-release.
+
+## Roadmap
+
+Prossimi dati/funzioni da valutare solo se recuperabili in modo affidabile dal portale reale:
+
+- numero linea o identificativo utile, con attenzione alla privacy;
+- chiamate/SMS/MMS e relativi costi se utili in Home Assistant;
+- eventuali dettagli aggiuntivi dell'offerta;
+- ulteriore hardening del parser e ampliamento delle fixture di test.
 
 ## Origine e attribuzione
 
 Il progetto nasce dallo studio del componente GPL-3.0 `masoneff3/ha_iliad_ita`, che ha dimostrato la fattibilità del login e del recupero dei dati dall'Area Personale Iliad.
 
 Questa implementazione è stata riscritta con architettura Home Assistant moderna: config entries, config flow, client asincrono, DataUpdateCoordinator, supporto multi-account, unique ID e device dedicati.
-
-Repository di riferimento:
-`https://github.com/masoneff3/ha_iliad_ita`
 
 ## Licenza
 
