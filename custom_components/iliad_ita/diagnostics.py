@@ -33,6 +33,9 @@ async def async_get_config_entry_diagnostics(
             ),
         },
         "parsed_data": {
+            "offer_name": data.offer_name,
+            "offer_price_eur": data.offer_price_eur,
+            "data_allowance_gb": data.data_allowance_gb,
             "balance_eur": data.balance_eur,
             "data_used_gb": data.data_used_gb,
             "data_remaining_gb": data.data_remaining_gb,
