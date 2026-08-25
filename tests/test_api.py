@@ -59,6 +59,27 @@ def test_parse_realistic_offer_page() -> None:
     assert data.renewal_date == date(2026, 9, 3)
 
 
+def test_offer_name_is_read_from_its_own_dom_node() -> None:
+    html = """
+    <html><body>
+      <section>
+        <h2><strong>Offerta Dati 350</strong></h2>
+        <div>Dettagli linea e metodo di pagamento</div>
+        <div>Credito: 0.02€</div>
+        <p>Si rinnova il 03/09/2026 alle 00:00 a 14.99€</p>
+        <p>Periodo di riferimento dal 02 Agosto 2026 al 02 Settembre 2026</p>
+        <b class="red" data-cs-mask>0.02 €</b>
+        <span class="red">55,08GB / 350GB</span>
+        <span class="big red">294</span><span class="small red">GB</span>
+      </section>
+    </body></html>
+    """
+    data = api.parse_account_page(html)
+    assert data.offer_name == "Offerta Dati 350"
+    assert data.data_allowance_gb == 350.0
+    assert data.offer_price_eur == 14.99
+
+
 def test_renewal_falls_back_to_day_after_period_end() -> None:
     html = REALISTIC_HTML.replace(
         "Si rinnova il 03/09/2026 alle 00:00 a 14.99€",
