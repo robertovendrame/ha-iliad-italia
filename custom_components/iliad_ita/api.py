@@ -117,21 +117,36 @@ def _parse_reference_period(text: str, reference: date) -> tuple[date | None, da
 
 
 def _parse_renewal_date(text: str, reference: date, period_end: date | None = None) -> date | None:
+    """Parse only a date explicitly attached to renewal text, then use period fallback."""
     normalized = " ".join(text.split())
-    for keyword in re.finditer(r"rinnov\w*", normalized, re.IGNORECASE):
-        window = normalized[max(0, keyword.start() - 40) : keyword.end() + 140]
-        numeric = re.search(r"\b(\d{1,2})[/.\-](\d{1,2})(?:[/.\-](\d{2,4}))?\b", window)
-        if numeric:
-            year_raw = numeric.group(3)
-            year = int(year_raw) if year_raw else None
-            if year is not None and year < 100:
-                year += 2000
-            parsed = _build_date(int(numeric.group(1)), int(numeric.group(2)), year, reference)
-            if parsed is not None:
-                return parsed
-        parsed = _parse_textual_date(window, reference)
+
+    numeric = re.search(
+        r"(?:si\s+)?rinnov\w*\s+(?:il\s+)?"
+        r"(\d{1,2})[/.\-](\d{1,2})(?:[/.\-](\d{2,4}))?\b",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if numeric:
+        year_raw = numeric.group(3)
+        year = int(year_raw) if year_raw else None
+        if year is not None and year < 100:
+            year += 2000
+        parsed = _build_date(int(numeric.group(1)), int(numeric.group(2)), year, reference)
         if parsed is not None:
             return parsed
+
+    textual = re.search(
+        r"(?:si\s+)?rinnov\w*\s+(?:il\s+)?"
+        r"(\d{1,2}\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|"
+        r"agosto|settembre|ottobre|novembre|dicembre)(?:\s+\d{4})?)\b",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if textual:
+        parsed = _parse_textual_date(textual.group(1), reference)
+        if parsed is not None:
+            return parsed
+
     return period_end + timedelta(days=1) if period_end is not None else None
 
 
