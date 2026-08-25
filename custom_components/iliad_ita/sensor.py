@@ -25,7 +25,7 @@ from .api import IliadData
 from .const import DOMAIN
 from .coordinator import IliadDataUpdateCoordinator
 
-SensorValue = float | int | date | datetime | None
+SensorValue = float | int | str | date | datetime | None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -41,15 +41,19 @@ def _total_data(data: IliadData) -> float | None:
     return data.data_used_gb + data.data_remaining_gb
 
 
+def _allowance_or_calculated_total(data: IliadData) -> float | None:
+    return data.data_allowance_gb if data.data_allowance_gb is not None else _total_data(data)
+
+
 def _used_percent(data: IliadData) -> float | None:
-    total = _total_data(data)
+    total = _allowance_or_calculated_total(data)
     if total is None or total <= 0 or data.data_used_gb is None:
         return None
     return (data.data_used_gb / total) * 100
 
 
 def _remaining_percent(data: IliadData) -> float | None:
-    total = _total_data(data)
+    total = _allowance_or_calculated_total(data)
     if total is None or total <= 0 or data.data_remaining_gb is None:
         return None
     return (data.data_remaining_gb / total) * 100
@@ -66,7 +70,6 @@ def _previous_month_same_day(value: date) -> date:
 
 
 def _cycle_start(data: IliadData) -> date | None:
-    """Return the real Iliad reference-period start, with legacy fallback."""
     if data.period_start is not None:
         return data.period_start
     if data.renewal_date is not None:
@@ -83,11 +86,10 @@ def _days_until_renewal(data: IliadData) -> int | None:
 def _average_daily_usage(data: IliadData) -> float | None:
     if data.data_used_gb is None:
         return None
-    today = dt_util.now().date()
     cycle_start = _cycle_start(data)
     if cycle_start is None:
         return None
-    elapsed_days = (today - cycle_start).days
+    elapsed_days = (dt_util.now().date() - cycle_start).days
     if elapsed_days <= 0:
         return None
     return data.data_used_gb / elapsed_days
@@ -114,12 +116,36 @@ def _projected_remaining_at_renewal(data: IliadData) -> float | None:
 
 SENSORS: tuple[IliadSensorEntityDescription, ...] = (
     IliadSensorEntityDescription(
+        key="offer_name",
+        translation_key="offer_name",
+        icon="mdi:sim",
+        value_fn=lambda data: data.offer_name,
+    ),
+    IliadSensorEntityDescription(
+        key="offer_price",
+        translation_key="offer_price",
+        icon="mdi:cash-sync",
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement="EUR",
+        value_fn=lambda data: data.offer_price_eur,
+    ),
+    IliadSensorEntityDescription(
         key="balance",
         translation_key="balance",
         icon="mdi:currency-eur",
         device_class=SensorDeviceClass.MONETARY,
         native_unit_of_measurement="EUR",
         value_fn=lambda data: data.balance_eur,
+    ),
+    IliadSensorEntityDescription(
+        key="data_allowance",
+        translation_key="data_allowance",
+        icon="mdi:database-check-outline",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.data_allowance_gb,
     ),
     IliadSensorEntityDescription(
         key="data_used",
@@ -242,7 +268,6 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Iliad sensors."""
     coordinator: IliadDataUpdateCoordinator = entry.runtime_data
     async_add_entities(IliadSensor(coordinator, entry, description) for description in SENSORS)
 
@@ -261,7 +286,6 @@ class IliadSensor(CoordinatorEntity[IliadDataUpdateCoordinator], SensorEntity):
     ) -> None:
         super().__init__(coordinator)
         self.entity_description = description
-
         account_id = entry.unique_id or entry.entry_id
         self._attr_unique_id = f"{account_id}_{description.key}"
         self._attr_device_info = DeviceInfo(
@@ -273,5 +297,4 @@ class IliadSensor(CoordinatorEntity[IliadDataUpdateCoordinator], SensorEntity):
 
     @property
     def native_value(self) -> SensorValue:
-        """Return current sensor value."""
         return self.entity_description.value_fn(self.coordinator.data)
