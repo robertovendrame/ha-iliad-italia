@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0-beta.2] - 2026-08-25
+
+### Fixed
+- Added a second renewal-date strategy based on the real Iliad `Periodo di riferimento dal ... al ...` text.
+- When the explicit `Si rinnova il ...` date is not present in the static HTML, the integration now derives the renewal date as the day after the current reference-period end date.
+
+### Validated
+- Real Iliad page observed with renewal date `03/09/2026` and reference period ending `02 Settembre 2026`; the new fallback is designed specifically for this real page structure.
+
+### Notes
+- This remains a beta release until the fallback is confirmed in Home Assistant with real account data.
+
 ## [0.4.0-beta.1] - 2026-08-24
 
 ### Added
