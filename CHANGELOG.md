@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0-beta.2] - 2026-08-25
+
+### Fixed
+- Hardened offer-name parsing after real Home Assistant validation showed `Offerta` as unknown while `Plafond dati` and `Costo offerta` were parsed correctly.
+- The parser now prefers the smallest DOM text node containing the offer label instead of relying only on the flattened page text and proximity to `Credito`.
+- Added a regression test where `Offerta Dati 350` is isolated in its own nested DOM node and unrelated text appears before the credit label.
+
+### Validated
+- Real account validation of `0.5.0-beta.1`: official allowance `350 GB` and renewal price `14.99 EUR` parsed correctly; offer name required this follow-up fix.
+
 ## [0.5.0-beta.1] - 2026-08-25
 
 ### Added
