@@ -150,8 +150,32 @@ def _parse_renewal_date(text: str, reference: date, period_end: date | None = No
     return period_end + timedelta(days=1) if period_end is not None else None
 
 
+def _parse_offer_name_from_dom(soup: BeautifulSoup) -> str | None:
+    """Read the offer label from the smallest DOM text node that contains it."""
+    for text_node in soup.find_all(string=re.compile(r"\bofferta\b", re.IGNORECASE)):
+        text = " ".join(str(text_node).split())
+        if not text:
+            continue
+
+        # Keep only the offer label when other account labels share the same node.
+        candidate = re.split(
+            r"\s*(?:[•·|]|Credito\s*:|Si\s+rinnova\b|Periodo\s+di\s+riferimento\b)",
+            text,
+            maxsplit=1,
+            flags=re.IGNORECASE,
+        )[0].strip(" :-–—")
+
+        match = re.search(r"\bOfferta\s+.+", candidate, flags=re.IGNORECASE)
+        if match:
+            value = " ".join(match.group(0).split()).strip(" :-–—")
+            if 3 < len(value) <= 100:
+                return value
+
+    return None
+
+
 def _parse_offer_metadata(text: str) -> tuple[str | None, float | None, float | None]:
-    """Parse offer name, official data allowance and renewal price from page text."""
+    """Parse offer name fallback, official data allowance and renewal price."""
     normalized = " ".join(text.split())
 
     offer_name = None
@@ -216,7 +240,8 @@ def parse_account_page(html: str) -> IliadData:
     page_text = soup.get_text(" ", strip=True)
     period_start, period_end = _parse_reference_period(page_text, fetched_at.date())
     renewal_date = _parse_renewal_date(page_text, fetched_at.date(), period_end)
-    offer_name, data_allowance_gb, offer_price_eur = _parse_offer_metadata(page_text)
+    offer_name_fallback, data_allowance_gb, offer_price_eur = _parse_offer_metadata(page_text)
+    offer_name = _parse_offer_name_from_dom(soup) or offer_name_fallback
 
     if balance is None and used is None and remaining is None:
         raise IliadParseError("Nessun dato Iliad riconosciuto nella pagina account")
