@@ -1,0 +1,28 @@
+name: Feature request
+description: Proponi una nuova funzione o un nuovo dato Iliad da esporre in Home Assistant
+title: "[Feature]: "
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Funzione richiesta
+      description: Descrivi cosa vorresti aggiungere e perché sarebbe utile in Home Assistant.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Dove compare il dato in Iliad?
+      description: Se riguarda un dato del portale, indica la pagina/sezione e allega eventualmente uno screenshot anonimizzato.
+  - type: textarea
+    id: automation
+    attributes:
+      label: Caso d'uso
+      description: Dashboard, automazione, notifica o altro utilizzo previsto.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: Eventuali screenshot o esempi sono stati anonimizzati e non contengono credenziali o cookie.
+          required: true
