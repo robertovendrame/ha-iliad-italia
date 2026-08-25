@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import re
 
 from aiohttp import ClientError, ClientSession
@@ -92,13 +92,33 @@ def _build_date(day: int, month: int, year: int | None, reference: date) -> date
         return None
 
 
+def _parse_textual_date(text: str, reference: date) -> date | None:
+    """Parse an Italian textual date such as '02 Settembre 2026'."""
+    match = re.search(
+        r"\b(\d{1,2})\s+"
+        r"(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|"
+        r"settembre|ottobre|novembre|dicembre)"
+        r"(?:\s+(\d{4}))?\b",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+
+    day = int(match.group(1))
+    month = _ITALIAN_MONTHS[match.group(2).lower()]
+    year = int(match.group(3)) if match.group(3) else None
+    return _build_date(day, month, year, reference)
+
+
 def _parse_renewal_date(text: str, reference: date) -> date | None:
-    """Find a renewal date only in text located close to a renewal label."""
+    """Find the renewal date, with a fallback from the reference period end."""
     normalized = " ".join(text.split())
 
+    # Primary source: a date close to 'rinnovo' / 'si rinnova'.
     for keyword in re.finditer(r"rinnov\w*", normalized, flags=re.IGNORECASE):
         start = max(0, keyword.start() - 40)
-        end = min(len(normalized), keyword.end() + 120)
+        end = min(len(normalized), keyword.end() + 140)
         window = normalized[start:end]
 
         numeric = re.search(
@@ -116,21 +136,41 @@ def _parse_renewal_date(text: str, reference: date) -> date | None:
             if parsed is not None:
                 return parsed
 
-        textual = re.search(
-            r"\b(\d{1,2})\s+"
-            r"(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|"
-            r"settembre|ottobre|novembre|dicembre)"
-            r"(?:\s+(\d{4}))?\b",
-            window,
-            flags=re.IGNORECASE,
+        parsed = _parse_textual_date(window, reference)
+        if parsed is not None:
+            return parsed
+
+    # Fallback observed on the real Iliad page: the current offer period is shown as
+    # 'Periodo di riferimento dal <date> al <date>'. Renewal is the following day.
+    period_match = re.search(
+        r"periodo\s+di\s+riferimento\s+dal\s+(.{1,40}?)\s+al\s+(.{1,40}?)(?=\s{2,}|\s+(?:chiamate|sms|dati|mms|credito|ricarica)|$)",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if period_match:
+        period_end = _parse_textual_date(period_match.group(2), reference)
+        if period_end is not None:
+            return period_end + timedelta(days=1)
+
+    # More tolerant fallback when nearby text prevents the stricter match above.
+    period_start = re.search(
+        r"periodo\s+di\s+riferimento\s+dal\s+",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if period_start:
+        window = normalized[period_start.end() : period_start.end() + 140]
+        dates = list(
+            re.finditer(
+                r"\b\d{1,2}\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)(?:\s+\d{4})?\b",
+                window,
+                flags=re.IGNORECASE,
+            )
         )
-        if textual:
-            day = int(textual.group(1))
-            month = _ITALIAN_MONTHS[textual.group(2).lower()]
-            year = int(textual.group(3)) if textual.group(3) else None
-            parsed = _build_date(day, month, year, reference)
-            if parsed is not None:
-                return parsed
+        if len(dates) >= 2:
+            period_end = _parse_textual_date(dates[1].group(0), reference)
+            if period_end is not None:
+                return period_end + timedelta(days=1)
 
     return None
 
