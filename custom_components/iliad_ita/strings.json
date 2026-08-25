@@ -62,6 +62,8 @@
       "data_total_calculated": {"name": "Dati totali calcolati"},
       "data_used_percent": {"name": "Dati utilizzati percentuale"},
       "data_remaining_percent": {"name": "Dati residui percentuale"},
+      "period_start": {"name": "Inizio periodo"},
+      "period_end": {"name": "Fine periodo"},
       "renewal_date": {"name": "Data rinnovo"},
       "days_until_renewal": {"name": "Giorni al rinnovo"},
       "average_daily_usage": {"name": "Consumo medio giornaliero stimato"},
