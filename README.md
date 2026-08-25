@@ -6,14 +6,11 @@ Custom integration non ufficiale per Home Assistant che legge i dati dell'Area P
 
 ## Versione corrente
 
-La prima release pubblica è **v0.3.0**.
-
-Release:
-`https://github.com/robertovendrame/ha-iliad-italia/releases/tag/v0.3.0`
+La versione stabile preparata è **v0.4.0**.
 
 Le versioni pubblicate tramite GitHub Releases sono il riferimento per installazione e aggiornamento tramite HACS, così Home Assistant non dipende direttamente dallo stato corrente del branch `main`.
 
-La repository è stata validata con:
+La repository viene validata con:
 
 - controllo sintassi Python;
 - HACS Action;
@@ -29,9 +26,17 @@ Ogni account/SIM configurato crea un device separato con:
 - Dati totali calcolati (`GB`), ottenuti come usati + residui
 - Percentuale dati utilizzati
 - Percentuale dati residui
-- Ultimo aggiornamento riuscito
+- Data rinnovo
+- Giorni al rinnovo
+- Inizio periodo di riferimento
+- Fine periodo di riferimento
+- Consumo medio giornaliero stimato
+- Budget dati giornaliero fino al rinnovo
+- Dati previsti al rinnovo
+- Binary sensor **Rischio esaurimento prima del rinnovo**
 - Binary sensor **Dati in esaurimento**
 - Binary sensor **Credito basso**
+- Ultimo aggiornamento riuscito
 - Pulsante **Aggiorna ora** per forzare un refresh immediato
 
 L'integrazione supporta:
@@ -84,9 +89,9 @@ Per pubblicare una nuova versione:
 2. sposta le modifiche da `Unreleased` alla relativa sezione in `CHANGELOG.md`;
 3. verifica che il workflow **Validate** sia verde;
 4. apri **Actions → Release → Run workflow**;
-5. inserisci la versione senza prefisso `v`, per esempio `0.3.1`.
+5. inserisci la versione senza prefisso `v`, per esempio `0.4.0`.
 
-Il workflow controlla che la versione richiesta coincida con quella del manifest, estrae automaticamente le note dal changelog e crea la release/tag `vX.Y.Z`.
+Il workflow controlla che la versione richiesta coincida con quella del manifest, estrae automaticamente le note dal changelog e crea la release/tag `vX.Y.Z`. Le versioni con suffisso `alpha`, `beta` o `rc` vengono pubblicate come pre-release.
 
 ## Installazione manuale
 
@@ -118,6 +123,18 @@ Il comportamento multi-SIM è stato verificato con due account Iliad reali conte
 
 Lo stesso account non può essere aggiunto due volte nella stessa istanza, mentre la stessa integrazione può essere usata su istanze Home Assistant differenti.
 
+## Rinnovo, periodo e proiezioni
+
+L'integrazione legge dalla pagina Iliad il periodo di riferimento reale e, quando disponibile, la data di rinnovo. Se la data di rinnovo non è presente nell'HTML statico ma il periodo è riconosciuto, il rinnovo viene derivato come giorno successivo alla fine del periodo.
+
+Il consumo medio giornaliero usa l'inizio reale del periodo di riferimento. Il budget giornaliero indica quanti GB al giorno sono disponibili fino al rinnovo. La previsione dei dati al rinnovo applica il consumo medio corrente ai giorni ancora disponibili.
+
+Il binary sensor **Rischio esaurimento prima del rinnovo** passa a problema quando la proiezione dei dati residui al rinnovo scende sotto zero.
+
+Questi valori previsionali sono calcolati localmente e non sono forniti direttamente da Iliad.
+
+La lettura di periodo e rinnovo è stata validata con due account reali con periodi e date di rinnovo differenti.
+
 ## Opzioni per ogni SIM
 
 Apri l'integrazione in **Impostazioni → Dispositivi e servizi**, seleziona la SIM e apri **Configura**.
@@ -139,13 +156,9 @@ Le soglie correnti sono esposte anche come attributi dei binary sensor, così po
 
 `Dati totali calcolati`, `Dati utilizzati percentuale` e `Dati residui percentuale` sono valori derivati localmente da Home Assistant a partire dai dati usati e residui restituiti dall'Area Personale Iliad. Non sono valori aggiuntivi forniti direttamente da Iliad.
 
-Questo mantiene il parser semplice e permette di avere subito indicatori più utili per dashboard e automazioni.
-
 ## Diagnostica
 
-Home Assistant può generare i dati diagnostici della singola config entry. La diagnostica include stato del coordinator, intervallo configurato, opzioni e valori già parsati, ma **non include ID utente Iliad o password**.
-
-È pensata per rendere più semplice il debug di eventuali problemi futuri senza chiedere agli utenti di condividere credenziali.
+Home Assistant può generare i dati diagnostici della singola config entry. La diagnostica include stato del coordinator, intervallo configurato, opzioni, dati di consumo, rinnovo e periodo di riferimento, ma **non include ID utente Iliad o password**.
 
 ## Come funziona
 
@@ -163,16 +176,11 @@ Sviluppata e testata con riferimento a Home Assistant 2026.8.x.
 
 Prossimi dati/funzioni da valutare, **solo se recuperabili in modo affidabile dalla pagina Iliad reale**:
 
-- data di rinnovo;
-- giorni al rinnovo;
-- offerta/piano;
+- nome offerta/piano;
 - plafond dati ufficiale;
+- costo dell'offerta;
 - numero linea o altro identificativo utile;
-- consumo medio giornaliero;
-- GB/giorno disponibili fino al rinnovo;
-- previsione di esaurimento prima del rinnovo.
-
-La parte di previsione dipende dalla disponibilità di una data di rinnovo affidabile: non verranno introdotti selettori HTML ipotetici o dati inventati.
+- ulteriori dati di traffico e consumo realmente disponibili nel portale.
 
 ## Origine e attribuzione
 
