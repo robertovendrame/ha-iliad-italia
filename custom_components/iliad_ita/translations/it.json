@@ -5,27 +5,17 @@
       "user": {
         "title": "Configura Iliad Italia",
         "description": "Aggiungi una SIM/account Iliad. Puoi configurarne più di uno nella stessa istanza Home Assistant.",
-        "data": {
-          "name": "Nome SIM",
-          "username": "ID utente Iliad",
-          "password": "Password"
-        }
+        "data": {"name": "Nome SIM", "username": "ID utente Iliad", "password": "Password"}
       },
       "reauth_confirm": {
         "title": "Riautentica Iliad Italia",
         "description": "Aggiorna la password dell'account Iliad configurato.",
-        "data": {
-          "password": "Password"
-        }
+        "data": {"password": "Password"}
       },
       "reconfigure": {
         "title": "Riconfigura Iliad Italia",
         "description": "Aggiorna il nome della SIM o le credenziali. L'ID utente deve restare associato allo stesso account.",
-        "data": {
-          "name": "Nome SIM",
-          "username": "ID utente Iliad",
-          "password": "Password"
-        }
+        "data": {"name": "Nome SIM", "username": "ID utente Iliad", "password": "Password"}
       }
     },
     "error": {
@@ -56,7 +46,10 @@
   },
   "entity": {
     "sensor": {
+      "offer_name": {"name": "Offerta"},
+      "offer_price": {"name": "Costo offerta"},
       "balance": {"name": "Credito"},
+      "data_allowance": {"name": "Plafond dati"},
       "data_used": {"name": "Dati utilizzati"},
       "data_remaining": {"name": "Dati residui"},
       "data_total_calculated": {"name": "Dati totali calcolati"},
@@ -76,8 +69,6 @@
       "low_credit": {"name": "Credito basso"},
       "projected_data_exhaustion": {"name": "Rischio esaurimento prima del rinnovo"}
     },
-    "button": {
-      "refresh": {"name": "Aggiorna ora"}
-    }
+    "button": {"refresh": {"name": "Aggiorna ora"}}
   }
 }
