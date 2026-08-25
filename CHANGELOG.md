@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0-beta.3] - 2026-08-25
+
+### Added
+- Direct parsing of the real Iliad `Periodo di riferimento dal ... al ...` start and end dates.
+- New `Inizio periodo` and `Fine periodo` date sensors.
+- Reference-period dates included in privacy-safe diagnostics and in the projected-exhaustion binary sensor attributes.
+
+### Changed
+- Average daily usage and projected data at renewal now use the real Iliad reference-period start date when available, instead of assuming the previous monthly renewal date.
+- The previous-month calculation is retained only as a compatibility fallback when the reference period cannot be parsed.
+- Renewal-date fallback now reuses the parsed reference-period end date and derives renewal as the following day.
+
+### Validated
+- Real Iliad page observed with `Periodo di riferimento dal 02 Agosto 2026 al 02 Settembre 2026` and renewal on `03/09/2026`.
+
+### Notes
+- This beta is intended to validate the two new period sensors and confirm that projections continue to match real account data.
+
 ## [0.4.0-beta.2] - 2026-08-25
 
 ### Fixed
