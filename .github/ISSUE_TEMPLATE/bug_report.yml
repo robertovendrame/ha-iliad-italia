@@ -1,0 +1,58 @@
+name: Bug report
+description: Segnala un problema con l'integrazione Iliad Italia
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie per la segnalazione. Non inserire ID Iliad, password, cookie o HTML non anonimizzato.
+  - type: input
+    id: version
+    attributes:
+      label: Versione integrazione
+      placeholder: "0.5.0-beta.1"
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Versione Home Assistant
+      placeholder: "2026.8.x"
+    validations:
+      required: true
+  - type: dropdown
+    id: accounts
+    attributes:
+      label: Numero di account/SIM configurati
+      options: ["1", "2", "3 o più"]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Descrizione del problema
+      description: Spiega cosa succede e cosa ti aspettavi.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostica Home Assistant
+      description: Allegare la diagnostica dell'integrazione quando possibile. Verifica comunque che non contenga dati che non vuoi condividere.
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log rilevanti
+      description: Incolla solo le righe utili, senza credenziali, cookie o dati personali.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Verifiche
+      options:
+        - label: Ho rimosso credenziali, cookie e dati personali dalla segnalazione.
+          required: true
+        - label: Ho verificato di usare una versione recente dell'integrazione.
+          required: true
