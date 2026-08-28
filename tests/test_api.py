@@ -99,6 +99,15 @@ def test_specific_offer_wins_over_generic_mobile_label() -> None:
     assert data.offer_name == "Offerta Dati 350"
 
 
+def test_offer_name_trims_black_circle_separator() -> None:
+    html = REALISTIC_HTML.replace(
+        "Offerta Dati 350 • Credito: 0.02€",
+        "Offerta Dati 350 ● Credito: 0.02€",
+    )
+    data = api.parse_account_page(html)
+    assert data.offer_name == "Offerta Dati 350"
+
+
 def test_renewal_falls_back_to_day_after_period_end() -> None:
     html = REALISTIC_HTML.replace(
         "Si rinnova il 03/09/2026 alle 00:00 a 14.99€",
