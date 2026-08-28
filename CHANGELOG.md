@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0-beta.4] - 2026-08-28
+
+### Fixed
+- Real-world validation of beta.3 showed the commercial offer name being parsed correctly but retaining the trailing black-circle separator (`Offerta Dati 350 ●`).
+- Offer-name normalization now treats `●`, `•`, `·` and `|` as decorative separators and strips them from both DOM-derived and fallback offer labels.
+- Added a regression test for `Offerta Dati 350 ● Credito: ...`, which must resolve exactly to `Offerta Dati 350`.
+
 ## [0.5.0-beta.3] - 2026-08-25
 
 ### Fixed
