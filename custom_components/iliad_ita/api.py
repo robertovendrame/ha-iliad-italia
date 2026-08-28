@@ -157,17 +157,17 @@ def _normalize_offer_candidate(text: str) -> str | None:
         return None
 
     candidate = re.split(
-        r"\s*(?:[•·|]|Credito\s*:|Si\s+rinnova\b|Periodo\s+di\s+riferimento\b)",
+        r"\s*(?:[●•·|]|Credito\s*:|Si\s+rinnova\b|Periodo\s+di\s+riferimento\b)",
         normalized,
         maxsplit=1,
         flags=re.IGNORECASE,
-    )[0].strip(" :-–—")
+    )[0].strip(" :-–—●•·|")
 
-    match = re.search(r"\bOfferta\b(?:\s+[^•·|]{1,90})?", candidate, flags=re.IGNORECASE)
+    match = re.search(r"\bOfferta\b(?:\s+[^●•·|]{1,90})?", candidate, flags=re.IGNORECASE)
     if not match:
         return None
 
-    value = " ".join(match.group(0).split()).strip(" :-–—")
+    value = " ".join(match.group(0).split()).strip(" :-–—●•·|")
     if not 3 < len(value) <= 100:
         return None
     return value
@@ -221,12 +221,12 @@ def _parse_offer_metadata(text: str) -> tuple[str | None, float | None, float | 
 
     offer_name = None
     offer_match = re.search(
-        r"\b(Offerta\s+.+?)(?=\s*[•·]\s*Credito\b|\s+Credito\s*:)",
+        r"\b(Offerta\s+.+?)(?=\s*[●•·]\s*Credito\b|\s+Credito\s*:)",
         normalized,
         flags=re.IGNORECASE,
     )
     if offer_match:
-        offer_name = " ".join(offer_match.group(1).split())
+        offer_name = " ".join(offer_match.group(1).split()).strip(" :-–—●•·|")
 
     data_allowance_gb = None
     allowance_match = re.search(
