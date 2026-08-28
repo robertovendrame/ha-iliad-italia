@@ -211,7 +211,9 @@ def _parse_offer_name_from_dom(soup: BeautifulSoup) -> str | None:
     if not candidates:
         return None
 
-    best = max(candidates, key=lambda value: (_offer_candidate_score(value), len(value)))
+    # Parent nodes may contain the correct offer name plus unrelated sibling text.
+    # When two candidates have the same specificity score, prefer the shorter one.
+    best = max(candidates, key=lambda value: (_offer_candidate_score(value), -len(value)))
     return best if _offer_candidate_score(best) >= 0 else None
 
 
