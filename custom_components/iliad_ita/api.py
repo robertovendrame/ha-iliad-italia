@@ -45,6 +45,8 @@ class IliadData:
     sms_cost_eur: float | None
     mms_count: int | None
     mms_cost_eur: float | None
+    account_user_id: str | None
+    phone_number: str | None
     offer_name: str | None
     offer_price_eur: float | None
     renewal_date: date | None
@@ -403,6 +405,34 @@ def _parse_usage_counters(text: str) -> tuple[int | None, float | None, int | No
     )
 
 
+def _parse_account_metadata(text: str) -> tuple[str | None, str | None]:
+    """Parse account ID and mobile line from the shared Iliad account menu."""
+    normalized = " ".join(text.split())
+
+    account_user_id = None
+    user_match = re.search(
+        r"\bID\s+utente\s*:\s*([A-Za-z0-9._-]{3,64})\b",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if user_match:
+        account_user_id = user_match.group(1)
+
+    phone_number = None
+    line_match = re.search(
+        r"\bLinea\s*:\s*(\+?[0-9][0-9 .-]{5,24})",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if line_match:
+        raw = line_match.group(1).strip()
+        phone_number = ("+" if raw.startswith("+") else "") + re.sub(r"\D", "", raw)
+        if len(phone_number.lstrip("+")) < 6:
+            phone_number = None
+
+    return account_user_id, phone_number
+
+
 def parse_account_page(html: str) -> IliadData:
     """Parse Iliad's consumi-e-credito HTML page."""
     soup = BeautifulSoup(html, "html.parser")
@@ -454,6 +484,7 @@ def parse_account_page(html: str) -> IliadData:
         mms_count,
         mms_cost_eur,
     ) = _parse_usage_counters(page_text)
+    account_user_id, phone_number = _parse_account_metadata(page_text)
 
     fetched_at = datetime.now(timezone.utc)
     period_start, period_end = _parse_reference_period(page_text, fetched_at.date())
@@ -480,6 +511,8 @@ def parse_account_page(html: str) -> IliadData:
         sms_cost_eur=sms_cost_eur,
         mms_count=mms_count,
         mms_cost_eur=mms_cost_eur,
+        account_user_id=account_user_id,
+        phone_number=phone_number,
         offer_name=offer_name,
         offer_price_eur=offer_price_eur,
         renewal_date=renewal_date,
