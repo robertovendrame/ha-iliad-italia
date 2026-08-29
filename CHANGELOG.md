@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-29
+
+### Added
+- Parsing of the commercial Iliad offer name.
+- Official data allowance (`Plafond dati`) when exposed by the Iliad account page.
+- Offer renewal price (`Costo offerta`).
+- New `Offerta`, `Plafond dati` and `Costo offerta` sensors.
+- Offer metadata in privacy-safe diagnostics.
+- Automatic parser regression tests with anonymized realistic HTML fixtures.
+- GitHub issue forms for bug reports and feature requests.
+
+### Changed
+- Used-data and remaining-data percentages now prefer the official Iliad allowance when available, falling back to `used + remaining` on unsupported/older layouts.
+- `Dati totali calcolati` remains available as a compatibility and diagnostic value rather than the preferred denominator.
+- GitHub Actions validation now runs Python syntax checks, `pytest`, HACS validation and Home Assistant Hassfest.
+
+### Fixed
+- Hardened offer-name extraction for split DOM markup and generic portal labels such as `offerta mobile`.
+- Prefer specific and concise offer-name candidates over contaminated parent nodes.
+- Strip decorative separators such as `●`, `•`, `·` and `|` from the parsed offer name.
+- Tightened renewal-date parsing so unrelated dates in the reference-period text cannot be selected as the renewal date.
+
+### Validated
+- Official allowance `350 GB` and renewal price `14.99 EUR` confirmed on a real Iliad account.
+- Offer-name parser regression suite passes after fixes developed through beta.1 to beta.4.
+- Multi-account behavior and different renewal/reference periods remain supported from the validated 0.4.x implementation.
+
 ## [0.5.0-beta.4] - 2026-08-28
 
 ### Fixed
