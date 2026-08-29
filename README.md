@@ -6,8 +6,8 @@ Custom integration non ufficiale per Home Assistant che legge i dati dell'Area P
 
 ## Versioni
 
-- stabile: **v0.4.0**
-- sviluppo/test: **v0.5.0-beta.1**
+- stabile: **v0.5.0**
+- sviluppo/test: nessuna pre-release corrente
 
 Le GitHub Releases sono il riferimento per installazione e aggiornamento tramite HACS. Le versioni `alpha`, `beta` e `rc` vengono pubblicate come pre-release.
 
@@ -44,13 +44,19 @@ Quando il plafond ufficiale è disponibile, le percentuali vengono calcolate su 
 5. Riavvia Home Assistant.
 6. Vai in **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → Iliad Italia**.
 
-Per provare una beta, abilita le pre-release per la repository HACS e scegli la versione desiderata.
+Per provare una futura beta, abilita le pre-release per la repository HACS e scegli la versione desiderata.
 
 ## Multi-SIM
 
 Ogni account Iliad usa una sessione HTTP e un cookie jar dedicati. Questo evita conflitti tra più SIM configurate nella stessa istanza Home Assistant.
 
 Il comportamento multi-SIM è stato verificato con due account Iliad reali contemporaneamente.
+
+## Offerta e plafond dati
+
+Dalla versione **0.5.0** l'integrazione tenta di leggere direttamente dalla pagina Iliad anche il nome commerciale dell'offerta, il plafond dati ufficiale e il costo al rinnovo.
+
+Il parser è stato irrobustito per gestire markup suddiviso, etichette generiche del portale e separatori decorativi. Quando il plafond ufficiale non è disponibile, le percentuali continuano a usare `dati usati + dati residui` come fallback.
 
 ## Rinnovo, periodo e proiezioni
 
@@ -87,7 +93,8 @@ La pipeline **Validate** esegue:
 I test coprono almeno:
 
 - credito, dati usati e residui;
-- nome offerta;
+- nome offerta e normalizzazione dei separatori decorativi;
+- selezione del nome commerciale rispetto alle etichette generiche del portale;
 - plafond ufficiale;
 - costo offerta;
 - periodo di riferimento;
