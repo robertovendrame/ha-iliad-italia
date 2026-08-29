@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0-beta.2] - 2026-08-29
+
+### Fixed
+- Hardened roaming-data parsing after real Home Assistant validation showed all five Estero sensors as unknown.
+- Roaming detection now scans the full account-page text for additional `used / allowance` counters instead of relying only on `span.red` CSS classes.
+- When Iliad exposes an Estero allowance/usage pair without a separate residual-value element, residual roaming data is derived safely as `allowance - used`.
+
+### Added
+- Voice/SMS/MMS summary parsing from the current `Consumi e Credito` page.
+- New sensors for `Durata chiamate`, `Costo chiamate`, `SMS inviati`, `Costo SMS extra`, `MMS inviati` and `Costo MMS`.
+- Privacy-safe diagnostics now report only whether the new voice/SMS/MMS fields were detected.
+- Regression tests for classless roaming markup, zero-value usage counters and mixed B/MB/GB roaming values.
+
+### Notes
+- This beta still requires real-world validation because Iliad may render the Estero tab dynamically on some account layouts.
+- No phone numbers or individual call/SMS/MMS records are collected or exposed.
+
 ## [0.6.0-beta.1] - 2026-08-29
 
 ### Added
