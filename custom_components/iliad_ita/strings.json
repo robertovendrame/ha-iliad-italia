@@ -78,6 +78,7 @@
       "last_update": {"name": "Ultimo aggiornamento"}
     },
     "binary_sensor": {
+      "offer_active": {"name": "Offerta attiva"},
       "low_data": {"name": "Dati in esaurimento"},
       "low_credit": {"name": "Credito basso"},
       "projected_data_exhaustion": {"name": "Rischio esaurimento prima del rinnovo"}
