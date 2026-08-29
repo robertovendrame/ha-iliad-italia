@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 import logging
 
-from aiohttp import CookieJar
+from aiohttp import ClientSession, CookieJar
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -32,9 +32,12 @@ class IliadDataUpdateCoordinator(DataUpdateCoordinator[IliadData]):
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.config_entry = entry
-        session = async_create_clientsession(hass, cookie_jar=CookieJar())
+        self._session: ClientSession = async_create_clientsession(
+            hass,
+            cookie_jar=CookieJar(),
+        )
         self._client = IliadClient(
-            session,
+            self._session,
             entry.data[CONF_USERNAME],
             entry.data[CONF_PASSWORD],
         )
@@ -58,3 +61,8 @@ class IliadDataUpdateCoordinator(DataUpdateCoordinator[IliadData]):
             raise ConfigEntryAuthFailed from err
         except (IliadConnectionError, IliadParseError) as err:
             raise UpdateFailed(str(err)) from err
+
+    async def async_close(self) -> None:
+        """Close the isolated HTTP session and discard its cookie jar."""
+        if not self._session.closed:
+            await self._session.close()
