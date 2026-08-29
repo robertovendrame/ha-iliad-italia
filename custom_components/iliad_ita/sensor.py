@@ -59,6 +59,20 @@ def _remaining_percent(data: IliadData) -> float | None:
     return (data.data_remaining_gb / total) * 100
 
 
+def _roaming_used_percent(data: IliadData) -> float | None:
+    total = data.roaming_data_allowance_gb
+    if total is None or total <= 0 or data.roaming_data_used_gb is None:
+        return None
+    return (data.roaming_data_used_gb / total) * 100
+
+
+def _roaming_remaining_percent(data: IliadData) -> float | None:
+    total = data.roaming_data_allowance_gb
+    if total is None or total <= 0 or data.roaming_data_remaining_gb is None:
+        return None
+    return (data.roaming_data_remaining_gb / total) * 100
+
+
 def _previous_month_same_day(value: date) -> date:
     year = value.year
     month = value.month - 1
@@ -194,6 +208,54 @@ SENSORS: tuple[IliadSensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         suggested_display_precision=1,
         value_fn=_remaining_percent,
+    ),
+    IliadSensorEntityDescription(
+        key="roaming_data_allowance",
+        translation_key="roaming_data_allowance",
+        icon="mdi:earth",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.roaming_data_allowance_gb,
+    ),
+    IliadSensorEntityDescription(
+        key="roaming_data_used",
+        translation_key="roaming_data_used",
+        icon="mdi:earth-arrow-right",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.roaming_data_used_gb,
+    ),
+    IliadSensorEntityDescription(
+        key="roaming_data_remaining",
+        translation_key="roaming_data_remaining",
+        icon="mdi:earth-check",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.roaming_data_remaining_gb,
+    ),
+    IliadSensorEntityDescription(
+        key="roaming_data_used_percent",
+        translation_key="roaming_data_used_percent",
+        icon="mdi:chart-donut",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=1,
+        value_fn=_roaming_used_percent,
+    ),
+    IliadSensorEntityDescription(
+        key="roaming_data_remaining_percent",
+        translation_key="roaming_data_remaining_percent",
+        icon="mdi:chart-donut-variant",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=1,
+        value_fn=_roaming_remaining_percent,
     ),
     IliadSensorEntityDescription(
         key="period_start",
