@@ -38,8 +38,11 @@ REALISTIC_HTML = """
     <p>Si rinnova il 03/09/2026 alle 00:00 a 14.99€</p>
     <p>Periodo di riferimento dal 02 Agosto 2026 al 02 Settembre 2026</p>
     <b class="red" data-cs-mask>0.02 €</b>
+    <div>Durata: 1m 34s</div><div>Consumi voce: 0.00€</div>
+    <div>3 SMS</div><div>SMS extra: 0.00€</div>
     <span class="red">55,08GB / 350GB</span>
     <span class="big red">294</span><span class="small red">GB</span>
+    <div>1 MMS</div><div>Consumi MMS: 0.00€</div>
   </section>
 </body></html>
 """
@@ -73,6 +76,12 @@ def test_parse_realistic_offer_page() -> None:
     assert data.roaming_data_used_gb is None
     assert data.roaming_data_remaining_gb is None
     assert data.roaming_data_allowance_gb is None
+    assert data.calls_duration_seconds == 94
+    assert data.calls_cost_eur == 0.0
+    assert data.sms_count == 3
+    assert data.sms_cost_eur == 0.0
+    assert data.mms_count == 1
+    assert data.mms_cost_eur == 0.0
     assert data.offer_name == "Offerta Dati 350"
     assert data.offer_price_eur == 14.99
     assert data.period_start == date(2026, 8, 2)
@@ -91,6 +100,18 @@ def test_parse_national_and_roaming_data_buckets() -> None:
     assert data.roaming_data_allowance_gb == 23.0
 
 
+def test_roaming_parser_falls_back_to_unclassed_page_text() -> None:
+    html = ROAMING_HTML.replace(
+        '<span class="red">0B / 23GB</span>\n    <span class="big red">23</span><span class="small red">GB</span>',
+        '<div class="foreign-counter"><strong>0B / 23GB</strong></div>',
+    )
+    data = api.parse_account_page(html)
+
+    assert data.roaming_data_used_gb == 0.0
+    assert data.roaming_data_allowance_gb == 23.0
+    assert data.roaming_data_remaining_gb == 23.0
+
+
 def test_roaming_parser_supports_non_gb_used_units() -> None:
     html = ROAMING_HTML.replace("0B / 23GB", "512MB / 23GB").replace(
         '<span class="big red">23</span><span class="small red">GB</span>\n  </section>\n</body>',
@@ -101,6 +122,20 @@ def test_roaming_parser_supports_non_gb_used_units() -> None:
     assert data.roaming_data_used_gb == 0.512
     assert data.roaming_data_allowance_gb == 23.0
     assert data.roaming_data_remaining_gb == 22.488
+
+
+def test_usage_counters_support_zero_values() -> None:
+    html = REALISTIC_HTML.replace("Durata: 1m 34s", "Durata: 0s").replace(
+        "3 SMS", "0 SMS"
+    ).replace("1 MMS", "0 MMS")
+    data = api.parse_account_page(html)
+
+    assert data.calls_duration_seconds == 0
+    assert data.calls_cost_eur == 0.0
+    assert data.sms_count == 0
+    assert data.sms_cost_eur == 0.0
+    assert data.mms_count == 0
+    assert data.mms_cost_eur == 0.0
 
 
 def test_offer_name_is_read_from_its_own_dom_node() -> None:
