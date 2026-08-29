@@ -14,14 +14,12 @@ async def async_get_config_entry_diagnostics(
     hass: HomeAssistant,
     entry: ConfigEntry,
 ) -> dict[str, Any]:
-    """Return privacy-safe diagnostics for an Iliad config entry."""
+    """Return diagnostics without account identifiers or exact usage/credit values."""
     coordinator: IliadDataUpdateCoordinator = entry.runtime_data
     data = coordinator.data
 
     return {
         "entry": {
-            "title": entry.title,
-            "unique_id": entry.unique_id,
             "options": dict(entry.options),
         },
         "coordinator": {
@@ -36,9 +34,9 @@ async def async_get_config_entry_diagnostics(
             "offer_name": data.offer_name,
             "offer_price_eur": data.offer_price_eur,
             "data_allowance_gb": data.data_allowance_gb,
-            "balance_eur": data.balance_eur,
-            "data_used_gb": data.data_used_gb,
-            "data_remaining_gb": data.data_remaining_gb,
+            "balance_available": data.balance_eur is not None,
+            "data_used_available": data.data_used_gb is not None,
+            "data_remaining_available": data.data_remaining_gb is not None,
             "period_start": data.period_start.isoformat() if data.period_start else None,
             "period_end": data.period_end.isoformat() if data.period_end else None,
             "renewal_date": data.renewal_date.isoformat() if data.renewal_date else None,
