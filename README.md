@@ -44,19 +44,13 @@ Quando il plafond ufficiale è disponibile, le percentuali vengono calcolate su 
 5. Riavvia Home Assistant.
 6. Vai in **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → Iliad Italia**.
 
-Per provare una futura beta, abilita le pre-release per la repository HACS e scegli la versione desiderata.
+Per provare una beta, abilita le pre-release per la repository HACS e scegli la versione desiderata.
 
 ## Multi-SIM
 
 Ogni account Iliad usa una sessione HTTP e un cookie jar dedicati. Questo evita conflitti tra più SIM configurate nella stessa istanza Home Assistant.
 
 Il comportamento multi-SIM è stato verificato con due account Iliad reali contemporaneamente.
-
-## Offerta e plafond dati
-
-Dalla versione **0.5.0** l'integrazione tenta di leggere direttamente dalla pagina Iliad anche il nome commerciale dell'offerta, il plafond dati ufficiale e il costo al rinnovo.
-
-Il parser è stato irrobustito per gestire markup suddiviso, etichette generiche del portale e separatori decorativi. Quando il plafond ufficiale non è disponibile, le percentuali continuano a usare `dati usati + dati residui` come fallback.
 
 ## Rinnovo, periodo e proiezioni
 
@@ -97,13 +91,16 @@ Le GitHub Actions usate dalla pipeline sono fissate a commit SHA immutabili e la
 I test coprono almeno:
 
 - credito, dati usati e residui;
-- nome offerta e normalizzazione dei separatori decorativi;
-- selezione del nome commerciale rispetto alle etichette generiche del portale;
+- nome offerta;
 - plafond ufficiale;
 - costo offerta;
 - periodo di riferimento;
 - rinnovo esplicito e fallback dal termine del periodo;
 - compatibilità con pagine senza i nuovi metadati commerciali.
+
+## Brand locale
+
+Da Home Assistant 2026.3+ la custom integration include il proprio set brand locale nella cartella `custom_components/iliad_ita/brand/`, con `icon.png`, `dark_icon.png`, `logo.png` e `dark_logo.png`. Home Assistant usa questi asset locali con priorità rispetto al vecchio CDN brand. Il placeholder eventualmente visibile nella lista HACS dipende invece dal supporto HACS alle icone locali.
 
 ## Segnalazioni
 
