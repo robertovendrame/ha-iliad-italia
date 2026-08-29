@@ -6,7 +6,7 @@ Custom integration non ufficiale per Home Assistant che legge i dati dell'Area P
 
 ## Versioni
 
-- stabile: **v0.5.2**
+- stabile: **v0.6.0**
 - sviluppo/test: nessuna pre-release corrente
 
 Le GitHub Releases sono il riferimento per installazione e aggiornamento tramite HACS. Le versioni `alpha`, `beta` e `rc` vengono pubblicate come pre-release.
@@ -15,6 +15,8 @@ Le GitHub Releases sono il riferimento per installazione e aggiornamento tramite
 
 Ogni account/SIM crea un device separato con:
 
+- ID utente Iliad mostrato dal portale;
+- numero di telefono della linea;
 - nome offerta/piano quando riconosciuto;
 - costo dell'offerta al rinnovo;
 - credito disponibile;
@@ -22,6 +24,13 @@ Ogni account/SIM crea un device separato con:
 - dati utilizzati e residui;
 - dati totali calcolati (`usati + residui`) come valore di compatibilità/diagnostica;
 - percentuale dati utilizzati e residui;
+- plafond dati estero/roaming;
+- dati utilizzati e residui estero;
+- percentuale dati utilizzati e residui estero;
+- durata chiamate del periodo corrente;
+- costo chiamate;
+- SMS inviati e relativo costo extra;
+- MMS inviati e relativo costo;
 - data rinnovo e giorni al rinnovo;
 - inizio e fine periodo di riferimento;
 - consumo medio giornaliero stimato;
@@ -58,6 +67,46 @@ Dalla versione **0.5.0** l'integrazione tenta di leggere direttamente dalla pagi
 
 Il parser è stato irrobustito per gestire markup suddiviso, etichette generiche del portale e separatori decorativi. Quando il plafond ufficiale non è disponibile, le percentuali continuano a usare `dati usati + dati residui` come fallback.
 
+## Roaming / Estero
+
+Dalla versione **0.6.0** l'integrazione legge anche il contatore dati separato della sezione Estero quando presente nel portale Iliad.
+
+Sono esposti:
+
+- plafond dati estero;
+- dati utilizzati estero;
+- dati residui estero;
+- percentuale utilizzata estero;
+- percentuale residua estero.
+
+Il parser supporta valori espressi in B, KB, MB, GB e TB e normalizza i dati in GB. Se Iliad espone uso e plafond ma non un valore residuo separato, il residuo viene derivato come `plafond - utilizzato`.
+
+Il supporto è stato verificato su due offerte reali con plafond roaming differenti, rispettivamente da 23 GB e 12 GB.
+
+## Voce, SMS e MMS
+
+Dalla versione **0.6.0** vengono letti anche i riepiloghi del periodo corrente mostrati nella pagina consumi:
+
+- durata complessiva chiamate;
+- costo chiamate;
+- numero SMS inviati;
+- costo SMS extra;
+- numero MMS inviati;
+- costo MMS.
+
+L'integrazione non importa lo storico delle singole comunicazioni e non raccoglie i numeri telefonici presenti nel dettaglio chiamate/SMS/MMS.
+
+## Identificativi account e linea
+
+Dalla versione **0.6.0** vengono esposti anche:
+
+- **Utente Iliad**, corrispondente all'`ID utente` mostrato dal portale;
+- **Numero di telefono**, corrispondente alla `Linea` mostrata nel menu account.
+
+Questi valori vengono letti dal blocco account comune del portale, utilizzando le etichette esplicite `ID utente:` e `Linea:` per evitare di interpretare altri numeri presenti nelle pagine.
+
+Per motivi di privacy, ID utente e numero di telefono non vengono inclusi nella diagnostica e non vengono utilizzati come unique ID delle entità.
+
 ## Branding locale
 
 Dalla versione **0.5.2** il progetto include un set brand locale completo per Home Assistant sotto `custom_components/iliad_ita/brand/`, con icone e logo per temi chiari e scuri. L'icona utilizza una SIM bianca con `i` rossa e ombra, in modo da mantenere contrasto su sfondi diversi.
@@ -85,6 +134,8 @@ Da **Impostazioni → Dispositivi e servizi → Iliad Italia → Configura** puo
 
 Dalla versione **0.5.1** la diagnostica non include ID account/unique ID, titolo della config entry, credito esatto o quantità esatte di dati usati/residui. Mantiene soltanto le informazioni necessarie a capire se il parser ha riconosciuto i campi e alcuni metadati non di autenticazione.
 
+Dalla versione **0.6.0**, anche ID utente Iliad e numero di telefono sono esclusi esplicitamente dalla diagnostica. La diagnostica relativa a roaming e voce/SMS/MMS riporta soltanto se i campi sono stati riconosciuti, senza esporre valori identificativi o dettagli delle singole comunicazioni.
+
 L'integrazione usa esclusivamente endpoint Iliad in HTTPS e mantiene una sessione/cookie jar separata per ogni account. Le sessioni vengono chiuse esplicitamente quando l'integrazione viene scaricata o se il setup iniziale fallisce.
 
 Non pubblicare mai username/ID Iliad, password, cookie, header di autenticazione, file HAR o HTML completo catturato da un account reale. Consulta `SECURITY.md` per la policy completa e per la segnalazione privata di vulnerabilità.
@@ -109,6 +160,9 @@ I test coprono almeno:
 - costo offerta;
 - periodo di riferimento;
 - rinnovo esplicito e fallback dal termine del periodo;
+- roaming/estero con layout e unità differenti;
+- riepiloghi voce/SMS/MMS, inclusi valori pari a zero;
+- parsing privacy-aware di ID utente e linea;
 - compatibilità con pagine senza i nuovi metadati commerciali.
 
 ## Segnalazioni
@@ -126,7 +180,7 @@ La versione corrente non usa API Iliad pubbliche documentate. Effettua il login 
 
 `https://www.iliad.it/account/consumi-e-credito`
 
-Il parser interpreta l'HTML della pagina. Modifiche al portale Iliad possono quindi richiedere un aggiornamento dell'integrazione.
+Il parser interpreta l'HTML della pagina e i metadati del menu account condiviso. Modifiche al portale Iliad possono quindi richiedere un aggiornamento dell'integrazione.
 
 ## Compatibilità
 
@@ -146,10 +200,11 @@ Il workflow verifica la corrispondenza con il manifest, estrae le note dal chang
 
 Prossimi dati/funzioni da valutare solo se recuperabili in modo affidabile dal portale reale:
 
-- numero linea o identificativo utile, con attenzione alla privacy;
-- chiamate/SMS/MMS e relativi costi se utili in Home Assistant;
-- eventuali dettagli aggiuntivi dell'offerta;
-- ulteriore hardening del parser e ampliamento delle fixture di test.
+- eventuali dettagli aggiuntivi dell'offerta realmente utili in Home Assistant;
+- ulteriore hardening del parser;
+- ampliamento delle fixture di test con ulteriori varianti del portale Iliad.
+
+Lo storico dettagliato delle singole chiamate/SMS/MMS non è attualmente previsto, per mantenere l'integrazione semplice e limitare il trattamento di dati personali non necessari.
 
 ## Origine e attribuzione
 
