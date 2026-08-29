@@ -45,6 +45,24 @@ REALISTIC_HTML = """
 """
 
 
+ROAMING_HTML = """
+<html><body>
+  <section id="italia">
+    <h2>Offerta Dati 350 • Credito: 0.02€</h2>
+    <p>Si rinnova il 03/09/2026 alle 00:00 a 14.99€</p>
+    <p>Periodo di riferimento dal 02 Agosto 2026 al 02 Settembre 2026</p>
+    <b class="red" data-cs-mask>0.02 €</b>
+    <span class="red">65,97GB / 350GB</span>
+    <span class="big red">284</span><span class="small red">GB</span>
+  </section>
+  <section id="estero">
+    <span class="red">0B / 23GB</span>
+    <span class="big red">23</span><span class="small red">GB</span>
+  </section>
+</body></html>
+"""
+
+
 def test_parse_realistic_offer_page() -> None:
     data = api.parse_account_page(REALISTIC_HTML)
 
@@ -52,11 +70,37 @@ def test_parse_realistic_offer_page() -> None:
     assert data.data_used_gb == 55.08
     assert data.data_remaining_gb == 294.0
     assert data.data_allowance_gb == 350.0
+    assert data.roaming_data_used_gb is None
+    assert data.roaming_data_remaining_gb is None
+    assert data.roaming_data_allowance_gb is None
     assert data.offer_name == "Offerta Dati 350"
     assert data.offer_price_eur == 14.99
     assert data.period_start == date(2026, 8, 2)
     assert data.period_end == date(2026, 9, 2)
     assert data.renewal_date == date(2026, 9, 3)
+
+
+def test_parse_national_and_roaming_data_buckets() -> None:
+    data = api.parse_account_page(ROAMING_HTML)
+
+    assert data.data_used_gb == 65.97
+    assert data.data_remaining_gb == 284.0
+    assert data.data_allowance_gb == 350.0
+    assert data.roaming_data_used_gb == 0.0
+    assert data.roaming_data_remaining_gb == 23.0
+    assert data.roaming_data_allowance_gb == 23.0
+
+
+def test_roaming_parser_supports_non_gb_used_units() -> None:
+    html = ROAMING_HTML.replace("0B / 23GB", "512MB / 23GB").replace(
+        '<span class="big red">23</span><span class="small red">GB</span>\n  </section>\n</body>',
+        '<span class="big red">22,488</span><span class="small red">GB</span>\n  </section>\n</body>',
+    )
+    data = api.parse_account_page(html)
+
+    assert data.roaming_data_used_gb == 0.512
+    assert data.roaming_data_allowance_gb == 23.0
+    assert data.roaming_data_remaining_gb == 22.488
 
 
 def test_offer_name_is_read_from_its_own_dom_node() -> None:
