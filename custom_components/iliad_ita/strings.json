@@ -46,6 +46,8 @@
   },
   "entity": {
     "sensor": {
+      "account_user_id": {"name": "Utente Iliad"},
+      "phone_number": {"name": "Numero di telefono"},
       "offer_name": {"name": "Offerta"},
       "offer_price": {"name": "Costo offerta"},
       "balance": {"name": "Credito"},
