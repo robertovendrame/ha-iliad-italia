@@ -130,6 +130,18 @@ def _projected_remaining_at_renewal(data: IliadData) -> float | None:
 
 SENSORS: tuple[IliadSensorEntityDescription, ...] = (
     IliadSensorEntityDescription(
+        key="account_user_id",
+        translation_key="account_user_id",
+        icon="mdi:account-key-outline",
+        value_fn=lambda data: data.account_user_id,
+    ),
+    IliadSensorEntityDescription(
+        key="phone_number",
+        translation_key="phone_number",
+        icon="mdi:phone",
+        value_fn=lambda data: data.phone_number,
+    ),
+    IliadSensorEntityDescription(
         key="offer_name",
         translation_key="offer_name",
         icon="mdi:sim",
