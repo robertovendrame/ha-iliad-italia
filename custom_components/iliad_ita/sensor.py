@@ -35,6 +35,14 @@ class IliadSensorEntityDescription(SensorEntityDescription):
     value_fn: Callable[[IliadData], SensorValue]
 
 
+def _period_active(data: IliadData) -> bool | None:
+    """Return whether today belongs to the parsed Iliad reference period."""
+    if data.period_start is None or data.period_end is None:
+        return None
+    today = dt_util.now().date()
+    return data.period_start <= today <= data.period_end
+
+
 def _total_data(data: IliadData) -> float | None:
     if data.data_used_gb is None or data.data_remaining_gb is None:
         return None
@@ -91,14 +99,20 @@ def _cycle_start(data: IliadData) -> date | None:
     return None
 
 
+def _renewal_date_value(data: IliadData) -> date | None:
+    if _period_active(data) is False:
+        return None
+    return data.renewal_date
+
+
 def _days_until_renewal(data: IliadData) -> int | None:
-    if data.renewal_date is None:
+    if _period_active(data) is False or data.renewal_date is None:
         return None
     return (data.renewal_date - dt_util.now().date()).days
 
 
 def _average_daily_usage(data: IliadData) -> float | None:
-    if data.data_used_gb is None:
+    if _period_active(data) is False or data.data_used_gb is None:
         return None
     cycle_start = _cycle_start(data)
     if cycle_start is None:
@@ -110,7 +124,7 @@ def _average_daily_usage(data: IliadData) -> float | None:
 
 
 def _daily_budget_to_renewal(data: IliadData) -> float | None:
-    if data.data_remaining_gb is None:
+    if _period_active(data) is False or data.data_remaining_gb is None:
         return None
     days = _days_until_renewal(data)
     if days is None or days <= 0:
@@ -119,7 +133,7 @@ def _daily_budget_to_renewal(data: IliadData) -> float | None:
 
 
 def _projected_remaining_at_renewal(data: IliadData) -> float | None:
-    if data.data_remaining_gb is None:
+    if _period_active(data) is False or data.data_remaining_gb is None:
         return None
     days = _days_until_renewal(data)
     average = _average_daily_usage(data)
@@ -340,7 +354,7 @@ SENSORS: tuple[IliadSensorEntityDescription, ...] = (
         translation_key="renewal_date",
         icon="mdi:calendar-refresh",
         device_class=SensorDeviceClass.DATE,
-        value_fn=lambda data: data.renewal_date,
+        value_fn=_renewal_date_value,
     ),
     IliadSensorEntityDescription(
         key="days_until_renewal",
