@@ -7,3 +7,19 @@ htmlcov/
 .DS_Store
 .vscode/
 .idea/
+
+# Local secrets and authentication material
+.env
+.env.*
+secrets.yaml
+secrets*.json
+cookies*.txt
+cookies*.json
+session*.json
+*.har
+
+# Never commit real Iliad account captures; keep only synthetic/anonymized fixtures
+private/
+captures/
+iliad-account*.html
+account-capture*.html
