@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-08-29
+
+### Branding
+- Completed the local Home Assistant brand asset set under `custom_components/iliad_ita/brand/`.
+- Added light/dark integration icons and horizontal logos for current Home Assistant brand rendering.
+- Replaced the previous broken/oversized PNG with a valid optimized integration icon.
+- Brand artwork now uses the white SIM card with red `i` and drop shadow designed for good contrast on both light and dark backgrounds.
+
+### Notes
+- HACS may still show `icon not available` in its repository list because HACS does not currently consume all local custom-integration brand assets in the same way as Home Assistant itself.
+
 ## [0.5.1] - 2026-08-29
 
 ### Security
