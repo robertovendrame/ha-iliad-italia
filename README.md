@@ -6,7 +6,7 @@ Custom integration non ufficiale per Home Assistant che legge i dati dell'Area P
 
 ## Versioni
 
-- stabile: **v0.5.0**
+- stabile: **v0.5.1**
 - sviluppo/test: nessuna pre-release corrente
 
 Le GitHub Releases sono il riferimento per installazione e aggiornamento tramite HACS. Le versioni `alpha`, `beta` e `rc` vengono pubblicate come pre-release.
@@ -75,11 +75,13 @@ Da **Impostazioni → Dispositivi e servizi → Iliad Italia → Configura** puo
 - soglia credito, default `5 €`;
 - intervallo aggiornamento da `1` a `24` ore, default `6`.
 
-## Diagnostica e privacy
+## Diagnostica, privacy e sicurezza
 
-Home Assistant può esportare la diagnostica della config entry con stato del coordinator, opzioni e valori parsati, inclusi offerta, plafond, periodo e rinnovo.
+Dalla versione **0.5.1** la diagnostica non include ID account/unique ID, titolo della config entry, credito esatto o quantità esatte di dati usati/residui. Mantiene soltanto le informazioni necessarie a capire se il parser ha riconosciuto i campi e alcuni metadati non di autenticazione.
 
-La diagnostica **non include ID utente Iliad o password**. Nei bug report non devono essere pubblicati cookie, credenziali o HTML non anonimizzato.
+L'integrazione usa esclusivamente endpoint Iliad in HTTPS e mantiene una sessione/cookie jar separata per ogni account. Le sessioni vengono chiuse esplicitamente quando l'integrazione viene scaricata o se il setup iniziale fallisce.
+
+Non pubblicare mai username/ID Iliad, password, cookie, header di autenticazione, file HAR o HTML completo catturato da un account reale. Consulta `SECURITY.md` per la policy completa e per la segnalazione privata di vulnerabilità.
 
 ## Test automatici
 
@@ -89,6 +91,8 @@ La pipeline **Validate** esegue:
 - test automatici `pytest` del parser su HTML realistico anonimizzato;
 - HACS Action;
 - Home Assistant Hassfest.
+
+Le GitHub Actions usate dalla pipeline sono fissate a commit SHA immutabili e la pipeline di validazione opera con permessi repository in sola lettura.
 
 I test coprono almeno:
 
@@ -107,6 +111,8 @@ La repository include moduli GitHub dedicati per:
 
 - **Bug report**, con richiesta di versione HA/integrazione e diagnostica privacy-safe;
 - **Feature request**, con indicazione del dato Iliad e del caso d'uso in Home Assistant.
+
+Per problemi di sicurezza che potrebbero esporre credenziali, cookie o dati account, non aprire un issue pubblico: segui `SECURITY.md`.
 
 ## Come funziona
 
