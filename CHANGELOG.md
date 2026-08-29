@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-29
+
+### Added
+- Roaming/Estero support with separate sensors for data allowance, used data, remaining data and used/remaining percentages.
+- Voice/SMS/MMS summary sensors for call duration, call cost, SMS count, SMS extra cost, MMS count and MMS cost.
+- Account metadata sensors for `Utente Iliad` and `Numero di telefono`, parsed from the shared Iliad account menu.
+- Parser regression coverage for roaming values with different units, layouts without the previous CSS classes, zero-value voice/SMS/MMS counters and account metadata.
+
+### Changed
+- Roaming parsing no longer depends on a specific `span.red` layout: additional `used / allowance` counters are detected from the account-page text.
+- When Iliad provides roaming allowance and usage without a dedicated residual value, remaining roaming data is derived as `allowance - used`.
+- Privacy-safe diagnostics report availability of roaming and voice/SMS/MMS fields without exposing exact usage values, account ID or phone number.
+
+### Privacy
+- `Utente Iliad` and `Numero di telefono` are intentionally excluded from diagnostics and normal logs.
+- Phone numbers from individual call/SMS/MMS records are not collected.
+- Account ID and phone number are not used as entity unique IDs.
+
+### Validated
+- Roaming data validated on two real Iliad offers with different allowances: `23 GB` and `12 GB`.
+- Voice parsing validated with both zero duration and a real `2m 6s` usage value.
+- Account ID and mobile line parsing validated on a real Iliad account.
+- Existing domestic-data, offer, credit, renewal, period and projection sensors remained operational during real-world beta testing.
+- HACS validation, Home Assistant Hassfest, Python compilation and parser tests pass for the beta.3 codebase promoted to this stable release.
+
 ## [0.6.0-beta.3] - 2026-08-29
 
 ### Added
