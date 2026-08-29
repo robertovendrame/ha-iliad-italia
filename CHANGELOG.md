@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-29
+
+### Security
+- Diagnostics no longer expose the config-entry unique ID, friendly entry title, exact credit value or exact used/remaining data values.
+- Isolated Iliad HTTP sessions are now explicitly closed on unload and when initial setup fails, ensuring authentication cookies are discarded promptly.
+- Validation and release GitHub Actions are pinned to immutable commit SHAs; the validation workflow explicitly uses read-only repository permissions.
+- `.gitignore` now blocks common local secret, cookie, HAR and real-account capture files.
+- Added `SECURITY.md` with guidance for private vulnerability reporting and safe handling of Iliad credentials/account captures.
+
+### Notes
+- No evidence of credentials, cookies or real-account HTML was found in the tracked test fixtures reviewed for this release; current parser tests use synthetic/anonymized values.
+
 ## [0.5.0] - 2026-08-29
 
 ### Added
