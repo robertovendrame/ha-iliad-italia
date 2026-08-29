@@ -12,7 +12,11 @@ from .coordinator import IliadDataUpdateCoordinator
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Iliad Italia from a config entry."""
     coordinator = IliadDataUpdateCoordinator(hass, entry)
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except Exception:
+        await coordinator.async_close()
+        raise
 
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
@@ -21,8 +25,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload an Iliad Italia config entry."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    """Unload an Iliad Italia config entry and close its isolated session."""
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        coordinator: IliadDataUpdateCoordinator = entry.runtime_data
+        await coordinator.async_close()
+    return unload_ok
 
 
 async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
