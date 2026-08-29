@@ -36,6 +36,9 @@ class IliadData:
     data_used_gb: float | None
     data_remaining_gb: float | None
     data_allowance_gb: float | None
+    roaming_data_used_gb: float | None
+    roaming_data_remaining_gb: float | None
+    roaming_data_allowance_gb: float | None
     offer_name: str | None
     offer_price_eur: float | None
     renewal_date: date | None
@@ -55,7 +58,7 @@ def _decimal(value: str) -> float:
 
 def _size_to_gb(value: str, unit: str) -> float:
     number = _decimal(value)
-    factors = {"KB": 1 / 1_000_000, "MB": 1 / 1_000, "GB": 1, "TB": 1_000}
+    factors = {"KB": 1 / 1_000_000, "MB": 1 / 1_000, "GB": 1, "TB": 1_000, "B": 1 / 1_000_000_000}
     return number * factors[unit.upper()]
 
 
@@ -211,8 +214,6 @@ def _parse_offer_name_from_dom(soup: BeautifulSoup) -> str | None:
     if not candidates:
         return None
 
-    # Parent nodes may contain the correct offer name plus unrelated sibling text.
-    # When two candidates have the same specificity score, prefer the shorter one.
     best = max(candidates, key=lambda value: (_offer_candidate_score(value), -len(value)))
     return best if _offer_candidate_score(best) >= 0 else None
 
@@ -232,7 +233,7 @@ def _parse_offer_metadata(text: str) -> tuple[str | None, float | None, float | 
 
     data_allowance_gb = None
     allowance_match = re.search(
-        r"\b\d+[\d.,]*\s*(KB|MB|GB|TB)\s*/\s*(\d+[\d.,]*)\s*(KB|MB|GB|TB)\b",
+        r"\b\d+[\d.,]*\s*(B|KB|MB|GB|TB)\s*/\s*(\d+[\d.,]*)\s*(B|KB|MB|GB|TB)\b",
         normalized,
         flags=re.IGNORECASE,
     )
@@ -249,6 +250,47 @@ def _parse_offer_metadata(text: str) -> tuple[str | None, float | None, float | 
     return offer_name, data_allowance_gb, offer_price_eur
 
 
+def _parse_data_buckets(soup: BeautifulSoup) -> list[tuple[float, float, float | None]]:
+    """Parse national/roaming data buckets in DOM order.
+
+    Iliad exposes the national and roaming tabs using the same used/allowance and
+    remaining-value widgets. When both tab payloads are present in the HTML, the
+    first bucket is national and the second is roaming. This beta deliberately
+    leaves roaming values unavailable when only one bucket is present.
+    """
+    pair_pattern = re.compile(
+        r"(\d+[\d.,]*)\s*(B|KB|MB|GB|TB)\s*/\s*(\d+[\d.,]*)\s*(B|KB|MB|GB|TB)",
+        re.IGNORECASE,
+    )
+
+    pairs: list[tuple[float, float]] = []
+    for node in soup.select("span.red"):
+        match = pair_pattern.search(node.get_text(" ", strip=True))
+        if not match:
+            continue
+        used = _size_to_gb(match.group(1), match.group(2))
+        allowance = _size_to_gb(match.group(3), match.group(4))
+        pairs.append((used, allowance))
+
+    remaining_values: list[float] = []
+    for node in soup.select("span.big.red"):
+        value_match = re.search(r"([\d.,]+)", node.get_text(" ", strip=True))
+        unit_node = node.find_next("span", class_=["small", "red"])
+        unit_match = (
+            re.search(r"\b(B|KB|MB|GB|TB)\b", unit_node.get_text(" ", strip=True), re.IGNORECASE)
+            if unit_node
+            else None
+        )
+        if value_match and unit_match:
+            remaining_values.append(_size_to_gb(value_match.group(1), unit_match.group(1)))
+
+    buckets: list[tuple[float, float, float | None]] = []
+    for index, (used, allowance) in enumerate(pairs):
+        remaining = remaining_values[index] if index < len(remaining_values) else None
+        buckets.append((used, allowance, remaining))
+    return buckets
+
+
 def parse_account_page(html: str) -> IliadData:
     """Parse Iliad's consumi-e-credito HTML page."""
     soup = BeautifulSoup(html, "html.parser")
@@ -260,31 +302,43 @@ def parse_account_page(html: str) -> IliadData:
         if match:
             balance = _decimal(match.group(1))
 
-    size_pattern = re.compile(r"(\d+[\d.,]*)\s*(KB|MB|GB|TB)", re.IGNORECASE)
-    remaining = None
-    remaining_node = soup.select_one("span.big.red")
-    if remaining_node:
-        value_match = re.search(r"([\d.,]+)", remaining_node.get_text(" ", strip=True))
-        unit_node = remaining_node.find_next("span", class_=["small", "red"]) or soup.select_one("span.small.red")
-        unit_match = re.search(r"\b(KB|MB|GB|TB)\b", unit_node.get_text(" ", strip=True), re.IGNORECASE) if unit_node else None
-        if value_match and unit_match:
-            remaining = _size_to_gb(value_match.group(1), unit_match.group(1))
+    buckets = _parse_data_buckets(soup)
 
-    used = None
-    for node in soup.select("span.red"):
-        if node is remaining_node:
-            continue
-        match = size_pattern.search(node.get_text(" ", strip=True))
-        if match:
-            used = _size_to_gb(match.group(1), match.group(2))
-            break
+    used = buckets[0][0] if buckets else None
+    data_allowance_gb = buckets[0][1] if buckets else None
+    remaining = buckets[0][2] if buckets else None
+
+    roaming_used = buckets[1][0] if len(buckets) > 1 else None
+    roaming_allowance = buckets[1][1] if len(buckets) > 1 else None
+    roaming_remaining = buckets[1][2] if len(buckets) > 1 else None
+
+    # Backward-compatible fallback for layouts that expose remaining and used
+    # values without the combined "used / allowance" text.
+    size_pattern = re.compile(r"(\d+[\d.,]*)\s*(B|KB|MB|GB|TB)", re.IGNORECASE)
+    if remaining is None:
+        remaining_node = soup.select_one("span.big.red")
+        if remaining_node:
+            value_match = re.search(r"([\d.,]+)", remaining_node.get_text(" ", strip=True))
+            unit_node = remaining_node.find_next("span", class_=["small", "red"]) or soup.select_one("span.small.red")
+            unit_match = re.search(r"\b(B|KB|MB|GB|TB)\b", unit_node.get_text(" ", strip=True), re.IGNORECASE) if unit_node else None
+            if value_match and unit_match:
+                remaining = _size_to_gb(value_match.group(1), unit_match.group(1))
+
+    if used is None:
+        for node in soup.select("span.red"):
+            match = size_pattern.search(node.get_text(" ", strip=True))
+            if match:
+                used = _size_to_gb(match.group(1), match.group(2))
+                break
 
     fetched_at = datetime.now(timezone.utc)
     page_text = soup.get_text(" ", strip=True)
     period_start, period_end = _parse_reference_period(page_text, fetched_at.date())
     renewal_date = _parse_renewal_date(page_text, fetched_at.date(), period_end)
-    offer_name_fallback, data_allowance_gb, offer_price_eur = _parse_offer_metadata(page_text)
+    offer_name_fallback, allowance_fallback, offer_price_eur = _parse_offer_metadata(page_text)
     offer_name = _parse_offer_name_from_dom(soup) or offer_name_fallback
+    if data_allowance_gb is None:
+        data_allowance_gb = allowance_fallback
 
     if balance is None and used is None and remaining is None:
         raise IliadParseError("Nessun dato Iliad riconosciuto nella pagina account")
@@ -294,6 +348,9 @@ def parse_account_page(html: str) -> IliadData:
         data_used_gb=used,
         data_remaining_gb=remaining,
         data_allowance_gb=data_allowance_gb,
+        roaming_data_used_gb=roaming_used,
+        roaming_data_remaining_gb=roaming_remaining,
+        roaming_data_allowance_gb=roaming_allowance,
         offer_name=offer_name,
         offer_price_eur=offer_price_eur,
         renewal_date=renewal_date,
