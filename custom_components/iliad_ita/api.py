@@ -39,6 +39,12 @@ class IliadData:
     roaming_data_used_gb: float | None
     roaming_data_remaining_gb: float | None
     roaming_data_allowance_gb: float | None
+    calls_duration_seconds: int | None
+    calls_cost_eur: float | None
+    sms_count: int | None
+    sms_cost_eur: float | None
+    mms_count: int | None
+    mms_cost_eur: float | None
     offer_name: str | None
     offer_price_eur: float | None
     renewal_date: date | None
@@ -58,14 +64,29 @@ def _decimal(value: str) -> float:
 
 def _size_to_gb(value: str, unit: str) -> float:
     number = _decimal(value)
-    factors = {"KB": 1 / 1_000_000, "MB": 1 / 1_000, "GB": 1, "TB": 1_000, "B": 1 / 1_000_000_000}
+    factors = {
+        "B": 1 / 1_000_000_000,
+        "KB": 1 / 1_000_000,
+        "MB": 1 / 1_000,
+        "GB": 1,
+        "TB": 1_000,
+    }
     return number * factors[unit.upper()]
 
 
 _ITALIAN_MONTHS = {
-    "gennaio": 1, "febbraio": 2, "marzo": 3, "aprile": 4,
-    "maggio": 5, "giugno": 6, "luglio": 7, "agosto": 8,
-    "settembre": 9, "ottobre": 10, "novembre": 11, "dicembre": 12,
+    "gennaio": 1,
+    "febbraio": 2,
+    "marzo": 3,
+    "aprile": 4,
+    "maggio": 5,
+    "giugno": 6,
+    "luglio": 7,
+    "agosto": 8,
+    "settembre": 9,
+    "ottobre": 10,
+    "novembre": 11,
+    "dicembre": 12,
 }
 
 _TEXTUAL_DATE_RE = re.compile(
@@ -73,6 +94,12 @@ _TEXTUAL_DATE_RE = re.compile(
     r"(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|"
     r"settembre|ottobre|novembre|dicembre)"
     r"(?:\s+(\d{4}))?\b",
+    flags=re.IGNORECASE,
+)
+
+_DATA_PAIR_RE = re.compile(
+    r"(\d+[\d.,]*)\s*(B|KB|MB|GB|TB)\s*/\s*"
+    r"(\d+[\d.,]*)\s*(B|KB|MB|GB|TB)",
     flags=re.IGNORECASE,
 )
 
@@ -232,13 +259,9 @@ def _parse_offer_metadata(text: str) -> tuple[str | None, float | None, float | 
         offer_name = " ".join(offer_match.group(1).split()).strip(" :-–—●•·|")
 
     data_allowance_gb = None
-    allowance_match = re.search(
-        r"\b\d+[\d.,]*\s*(B|KB|MB|GB|TB)\s*/\s*(\d+[\d.,]*)\s*(B|KB|MB|GB|TB)\b",
-        normalized,
-        flags=re.IGNORECASE,
-    )
+    allowance_match = _DATA_PAIR_RE.search(normalized)
     if allowance_match:
-        data_allowance_gb = _size_to_gb(allowance_match.group(2), allowance_match.group(3))
+        data_allowance_gb = _size_to_gb(allowance_match.group(3), allowance_match.group(4))
 
     offer_price_eur = None
     renewal_match = re.search(r"si\s+rinnova\b(.{0,120})", normalized, flags=re.IGNORECASE)
@@ -250,34 +273,47 @@ def _parse_offer_metadata(text: str) -> tuple[str | None, float | None, float | 
     return offer_name, data_allowance_gb, offer_price_eur
 
 
-def _parse_data_buckets(soup: BeautifulSoup) -> list[tuple[float, float, float | None]]:
-    """Parse national/roaming data buckets in DOM order.
-
-    Iliad exposes the national and roaming tabs using the same used/allowance and
-    remaining-value widgets. When both tab payloads are present in the HTML, the
-    first bucket is national and the second is roaming. This beta deliberately
-    leaves roaming values unavailable when only one bucket is present.
-    """
-    pair_pattern = re.compile(
-        r"(\d+[\d.,]*)\s*(B|KB|MB|GB|TB)\s*/\s*(\d+[\d.,]*)\s*(B|KB|MB|GB|TB)",
-        re.IGNORECASE,
+def _data_pair(match: re.Match[str]) -> tuple[float, float]:
+    return (
+        _size_to_gb(match.group(1), match.group(2)),
+        _size_to_gb(match.group(3), match.group(4)),
     )
 
+
+def _parse_data_buckets(soup: BeautifulSoup) -> list[tuple[float, float, float | None]]:
+    """Parse national and roaming data buckets from varying Iliad layouts.
+
+    Older/current Iliad layouts do not consistently use the same CSS classes for
+    the Estero tab. We therefore collect explicit DOM pairs first and then scan
+    the flattened account text for additional ``used / allowance`` pairs. The
+    latter fixes layouts where the roaming values exist in the HTML but are not
+    represented by ``span.red`` elements.
+    """
     pairs: list[tuple[float, float]] = []
-    for node in soup.select("span.red"):
-        match = pair_pattern.search(node.get_text(" ", strip=True))
-        if not match:
-            continue
-        used = _size_to_gb(match.group(1), match.group(2))
-        allowance = _size_to_gb(match.group(3), match.group(4))
-        pairs.append((used, allowance))
+
+    def add_pair(pair: tuple[float, float]) -> None:
+        if not any(abs(pair[0] - old[0]) < 1e-9 and abs(pair[1] - old[1]) < 1e-9 for old in pairs):
+            pairs.append(pair)
+
+    for node in soup.find_all(string=_DATA_PAIR_RE):
+        match = _DATA_PAIR_RE.search(str(node))
+        if match:
+            add_pair(_data_pair(match))
+
+    page_text = soup.get_text(" ", strip=True)
+    for match in _DATA_PAIR_RE.finditer(page_text):
+        add_pair(_data_pair(match))
 
     remaining_values: list[float] = []
     for node in soup.select("span.big.red"):
         value_match = re.search(r"([\d.,]+)", node.get_text(" ", strip=True))
         unit_node = node.find_next("span", class_=["small", "red"])
         unit_match = (
-            re.search(r"\b(B|KB|MB|GB|TB)\b", unit_node.get_text(" ", strip=True), re.IGNORECASE)
+            re.search(
+                r"\b(B|KB|MB|GB|TB)\b",
+                unit_node.get_text(" ", strip=True),
+                re.IGNORECASE,
+            )
             if unit_node
             else None
         )
@@ -286,9 +322,85 @@ def _parse_data_buckets(soup: BeautifulSoup) -> list[tuple[float, float, float |
 
     buckets: list[tuple[float, float, float | None]] = []
     for index, (used, allowance) in enumerate(pairs):
-        remaining = remaining_values[index] if index < len(remaining_values) else None
+        explicit_remaining = remaining_values[index] if index < len(remaining_values) else None
+        calculated_remaining = max(0.0, allowance - used)
+        remaining = explicit_remaining if explicit_remaining is not None else calculated_remaining
         buckets.append((used, allowance, remaining))
+
     return buckets
+
+
+def _parse_duration_seconds(value: str) -> int | None:
+    """Convert Iliad duration strings such as ``1h 2m 3s`` to seconds."""
+    normalized = " ".join(value.split()).lower()
+    matches = re.findall(r"(\d+)\s*([hms])", normalized)
+    if not matches:
+        return None
+    total = 0
+    for number, unit in matches:
+        amount = int(number)
+        total += amount * {"h": 3600, "m": 60, "s": 1}[unit]
+    return total
+
+
+def _parse_usage_counters(text: str) -> tuple[int | None, float | None, int | None, float | None, int | None, float | None]:
+    """Parse voice/SMS/MMS counters from the current consumption summary."""
+    normalized = " ".join(text.split())
+
+    calls_duration_seconds = None
+    duration_match = re.search(
+        r"(?:Durata|Chiamate)\s*:\s*((?:\d+\s*[hms]\s*)+)",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if duration_match:
+        calls_duration_seconds = _parse_duration_seconds(duration_match.group(1))
+
+    calls_cost_eur = None
+    calls_cost_match = re.search(
+        r"Consumi\s+voce\s*:\s*([\d.,]+)\s*€",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if calls_cost_match:
+        calls_cost_eur = _decimal(calls_cost_match.group(1))
+
+    sms_count = None
+    sms_match = re.search(r"\b(\d+)\s+SMS\b", normalized, flags=re.IGNORECASE)
+    if sms_match:
+        sms_count = int(sms_match.group(1))
+
+    sms_cost_eur = None
+    sms_cost_match = re.search(
+        r"SMS\s+extra\s*:\s*([\d.,]+)\s*€",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if sms_cost_match:
+        sms_cost_eur = _decimal(sms_cost_match.group(1))
+
+    mms_count = None
+    mms_match = re.search(r"\b(\d+)\s+MMS\b", normalized, flags=re.IGNORECASE)
+    if mms_match:
+        mms_count = int(mms_match.group(1))
+
+    mms_cost_eur = None
+    mms_cost_match = re.search(
+        r"Consumi\s+MMS\s*:\s*([\d.,]+)\s*€",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if mms_cost_match:
+        mms_cost_eur = _decimal(mms_cost_match.group(1))
+
+    return (
+        calls_duration_seconds,
+        calls_cost_eur,
+        sms_count,
+        sms_cost_eur,
+        mms_count,
+        mms_cost_eur,
+    )
 
 
 def parse_account_page(html: str) -> IliadData:
@@ -302,6 +414,7 @@ def parse_account_page(html: str) -> IliadData:
         if match:
             balance = _decimal(match.group(1))
 
+    page_text = soup.get_text(" ", strip=True)
     buckets = _parse_data_buckets(soup)
 
     used = buckets[0][0] if buckets else None
@@ -312,15 +425,17 @@ def parse_account_page(html: str) -> IliadData:
     roaming_allowance = buckets[1][1] if len(buckets) > 1 else None
     roaming_remaining = buckets[1][2] if len(buckets) > 1 else None
 
-    # Backward-compatible fallback for layouts that expose remaining and used
-    # values without the combined "used / allowance" text.
     size_pattern = re.compile(r"(\d+[\d.,]*)\s*(B|KB|MB|GB|TB)", re.IGNORECASE)
     if remaining is None:
         remaining_node = soup.select_one("span.big.red")
         if remaining_node:
             value_match = re.search(r"([\d.,]+)", remaining_node.get_text(" ", strip=True))
             unit_node = remaining_node.find_next("span", class_=["small", "red"]) or soup.select_one("span.small.red")
-            unit_match = re.search(r"\b(B|KB|MB|GB|TB)\b", unit_node.get_text(" ", strip=True), re.IGNORECASE) if unit_node else None
+            unit_match = (
+                re.search(r"\b(B|KB|MB|GB|TB)\b", unit_node.get_text(" ", strip=True), re.IGNORECASE)
+                if unit_node
+                else None
+            )
             if value_match and unit_match:
                 remaining = _size_to_gb(value_match.group(1), unit_match.group(1))
 
@@ -331,8 +446,16 @@ def parse_account_page(html: str) -> IliadData:
                 used = _size_to_gb(match.group(1), match.group(2))
                 break
 
+    (
+        calls_duration_seconds,
+        calls_cost_eur,
+        sms_count,
+        sms_cost_eur,
+        mms_count,
+        mms_cost_eur,
+    ) = _parse_usage_counters(page_text)
+
     fetched_at = datetime.now(timezone.utc)
-    page_text = soup.get_text(" ", strip=True)
     period_start, period_end = _parse_reference_period(page_text, fetched_at.date())
     renewal_date = _parse_renewal_date(page_text, fetched_at.date(), period_end)
     offer_name_fallback, allowance_fallback, offer_price_eur = _parse_offer_metadata(page_text)
@@ -351,6 +474,12 @@ def parse_account_page(html: str) -> IliadData:
         roaming_data_used_gb=roaming_used,
         roaming_data_remaining_gb=roaming_remaining,
         roaming_data_allowance_gb=roaming_allowance,
+        calls_duration_seconds=calls_duration_seconds,
+        calls_cost_eur=calls_cost_eur,
+        sms_count=sms_count,
+        sms_cost_eur=sms_cost_eur,
+        mms_count=mms_count,
+        mms_cost_eur=mms_cost_eur,
         offer_name=offer_name,
         offer_price_eur=offer_price_eur,
         renewal_date=renewal_date,
