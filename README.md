@@ -6,7 +6,7 @@ Custom integration non ufficiale per Home Assistant che legge i dati dell'Area P
 
 ## Versioni
 
-- stabile: **v0.5.1**
+- stabile: **v0.5.2**
 - sviluppo/test: nessuna pre-release corrente
 
 Le GitHub Releases sono il riferimento per installazione e aggiornamento tramite HACS. Le versioni `alpha`, `beta` e `rc` vengono pubblicate come pre-release.
@@ -57,6 +57,12 @@ Il comportamento multi-SIM è stato verificato con due account Iliad reali conte
 Dalla versione **0.5.0** l'integrazione tenta di leggere direttamente dalla pagina Iliad anche il nome commerciale dell'offerta, il plafond dati ufficiale e il costo al rinnovo.
 
 Il parser è stato irrobustito per gestire markup suddiviso, etichette generiche del portale e separatori decorativi. Quando il plafond ufficiale non è disponibile, le percentuali continuano a usare `dati usati + dati residui` come fallback.
+
+## Branding locale
+
+Dalla versione **0.5.2** il progetto include un set brand locale completo per Home Assistant sotto `custom_components/iliad_ita/brand/`, con icone e logo per temi chiari e scuri. L'icona utilizza una SIM bianca con `i` rossa e ombra, in modo da mantenere contrasto su sfondi diversi.
+
+HACS può continuare a mostrare `icon not available` nella propria lista repository anche quando Home Assistant usa correttamente gli asset locali: il comportamento dipende dal supporto HACS al branding delle custom integration.
 
 ## Rinnovo, periodo e proiezioni
 
