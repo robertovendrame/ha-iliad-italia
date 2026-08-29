@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.1-beta.1] - 2026-08-29
+
+### Added
+- New `Offerta attiva` binary sensor based on the real Iliad reference period (`Inizio periodo` / `Fine periodo`).
+
+### Fixed
+- Renewal/projection sensors no longer present a future renewal as meaningful when the parsed reference period is already expired.
+- `Data rinnovo`, `Giorni al rinnovo`, daily budget, average daily usage and projected remaining data become unavailable for an explicitly expired reference period.
+- `Dati in esaurimento` and `Rischio esaurimento prima del rinnovo` become unavailable when there is no active reference period, avoiding misleading alerts on dormant SIMs.
+
+### Notes
+- Data allowance and remaining-data values are still exposed for an inactive SIM because Iliad may continue to show the commercial offer quota on the account page; `Offerta attiva` should be used to distinguish those values from currently usable included traffic.
+- `Credito basso` remains a generic configurable balance warning. It is intentionally not treated as proof that the next renewal will fail because Iliad can renew either from SIM credit or through automatic card/SEPA charging.
+- Call duration parsing remains stored natively in seconds; dashboards should respect the entity unit when formatting the state because Home Assistant may present the duration in minutes.
+
 ## [0.6.0] - 2026-08-29
 
 ### Added
