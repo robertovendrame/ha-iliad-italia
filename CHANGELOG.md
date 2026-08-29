@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0-beta.3] - 2026-08-29
+
+### Added
+- Parsing of account metadata exposed in the shared Iliad side menu.
+- New `Utente Iliad` sensor for the account ID shown by the portal.
+- New `Numero di telefono` sensor for the mobile line shown by the portal.
+
+### Privacy
+- Account ID and phone number are intentionally excluded from diagnostics and normal logs.
+- Neither value is used as an entity unique ID.
+
+### Notes
+- Metadata parsing is anchored to the explicit `ID utente:` and `Linea:` labels from the account menu to avoid collecting unrelated numbers from consumption details.
+- This beta requires real-world validation on the configured SIMs.
+
 ## [0.6.0-beta.2] - 2026-08-29
 
 ### Fixed
