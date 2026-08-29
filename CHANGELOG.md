@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0-beta.1] - 2026-08-29
+
+### Added
+- Initial roaming/estero support for the Iliad account page.
+- Parsing of the separate roaming data allowance exposed by the `ESTERO` section.
+- New sensors for `Plafond dati estero`, `Dati utilizzati estero`, `Dati residui estero`, `Dati utilizzati estero percentuale` and `Dati residui estero percentuale`.
+- Roaming data parsing supports byte/MB/GB/TB units and converts values to GB for Home Assistant.
+- Privacy-safe diagnostics report only whether roaming values were detected, without exposing exact roaming usage amounts.
+- Regression tests with synthetic/anonymized HTML containing separate Italia and Estero data buckets.
+
+### Notes
+- This beta requires real-world validation because Iliad may render the `ESTERO` section differently depending on the account or portal markup.
+- The parser keeps existing domestic-data behavior unchanged when roaming data cannot be detected.
+
 ## [0.5.2] - 2026-08-29
 
 ### Branding
@@ -138,7 +152,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Average daily usage and projected data at renewal now use the real Iliad reference-period start date when available, instead of assuming the previous monthly renewal date.
 - The previous-month calculation is retained only as a compatibility fallback when the reference period cannot be parsed.
-- Renewal-date fallback now reuses the parsed reference-period end date and derives renewal as the following day.
+- Renewal-date fallback now reuses the parsed reference-period end date and derives the following day.
 
 ### Validated
 - Real Iliad page observed with `Periodo di riferimento dal 02 Agosto 2026 al 02 Settembre 2026` and renewal on `03/09/2026`.
