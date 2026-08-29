@@ -50,6 +50,20 @@ PROJECTED_EXHAUSTION_DESCRIPTION = BinarySensorEntityDescription(
     device_class=BinarySensorDeviceClass.PROBLEM,
 )
 
+OFFER_ACTIVE_DESCRIPTION = BinarySensorEntityDescription(
+    key="offer_active",
+    translation_key="offer_active",
+    icon="mdi:sim-outline",
+)
+
+
+def _period_active(data: IliadData) -> bool | None:
+    """Return whether today belongs to the parsed Iliad reference period."""
+    if data.period_start is None or data.period_end is None:
+        return None
+    today = dt_util.now().date()
+    return data.period_start <= today <= data.period_end
+
 
 def _remaining_percent(data: IliadData) -> float | None:
     """Calculate the percentage of data remaining from parsed values."""
@@ -83,6 +97,8 @@ def _cycle_start(data: IliadData) -> date | None:
 
 def _projected_remaining_at_renewal(data: IliadData) -> float | None:
     """Project remaining GB at renewal from average usage in the current cycle."""
+    if _period_active(data) is False:
+        return None
     if (
         data.renewal_date is None
         or data.data_used_gb is None
@@ -115,6 +131,7 @@ async def async_setup_entry(
     coordinator: IliadDataUpdateCoordinator = entry.runtime_data
     async_add_entities(
         [
+            IliadOfferActiveBinarySensor(coordinator, entry),
             IliadLowDataBinarySensor(coordinator, entry),
             IliadLowCreditBinarySensor(coordinator, entry),
             IliadProjectedDataExhaustionBinarySensor(coordinator, entry),
@@ -148,6 +165,31 @@ class IliadBinarySensorBase(
         )
 
 
+class IliadOfferActiveBinarySensor(IliadBinarySensorBase):
+    """Indicate whether the parsed Iliad offer period is currently active."""
+
+    def __init__(
+        self,
+        coordinator: IliadDataUpdateCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator, entry, OFFER_ACTIVE_DESCRIPTION)
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true only while today is inside the parsed reference period."""
+        return _period_active(self.coordinator.data)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | None]:
+        """Expose the parsed period used to determine activity."""
+        data = self.coordinator.data
+        return {
+            "period_start": data.period_start.isoformat() if data.period_start else None,
+            "period_end": data.period_end.isoformat() if data.period_end else None,
+        }
+
+
 class IliadLowDataBinarySensor(IliadBinarySensorBase):
     """Indicate when remaining mobile data is below a configured threshold."""
 
@@ -162,6 +204,8 @@ class IliadLowDataBinarySensor(IliadBinarySensorBase):
     def is_on(self) -> bool | None:
         """Return true if either configured remaining-data threshold is reached."""
         data = self.coordinator.data
+        if _period_active(data) is False:
+            return None
         remaining_gb = data.data_remaining_gb
         remaining_percent = _remaining_percent(data)
         if remaining_gb is None and remaining_percent is None:
