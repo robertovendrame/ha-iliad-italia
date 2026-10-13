@@ -1,0 +1,1134 @@
+# Dashboard Lovelace di esempio per Iliad Italia
+#
+# Requisiti HACS:
+# - custom:button-card
+# - custom:apexcharts-card
+# - card-mod
+#
+# Prima dell'uso:
+# sostituisci TUTTE le occorrenze di "sim_esempio" con il prefisso reale
+# delle entità create dalla tua SIM, ad esempio "sim_garage".
+#
+# La dashboard è un esempio grafico separato dall'integrazione.
+
+type: grid
+columns: 1
+square: false
+cards:
+
+  ###########################################################################
+  # 1. HERO
+  ###########################################################################
+
+  - type: custom:button-card
+    entity: sensor.sim_esempio_dati_residui
+    show_name: false
+    show_icon: false
+    show_state: false
+
+    triggers_update:
+      - sensor.sim_esempio_offerta
+      - sensor.sim_esempio_dati_residui
+      - sensor.sim_esempio_dati_residui_percentuale
+      - sensor.sim_esempio_dati_utilizzati
+      - sensor.sim_esempio_plafond_dati
+      - sensor.sim_esempio_data_rinnovo
+      - sensor.sim_esempio_giorni_al_rinnovo
+
+    styles:
+      card:
+        - padding: 0
+        - border-radius: 30px
+        - overflow: hidden
+        - border: none
+        - background: linear-gradient(145deg, #f00032 0%, #d9002d 52%, #99001f 100%)
+        - box-shadow: 0 14px 35px rgba(0,0,0,0.22)
+        - position: relative
+      grid:
+        - grid-template-areas: '"hero"'
+        - grid-template-columns: 1fr
+      custom_fields:
+        hero:
+          - width: 100%
+        refresh:
+          - position: absolute
+          - top: 86px
+          - right: 30px
+          - width: 38px
+          - height: 38px
+          - z-index: 10
+
+    custom_fields:
+      refresh:
+        card:
+          type: custom:button-card
+          entity: button.sim_esempio_aggiorna_ora
+          icon: mdi:refresh
+          show_name: false
+          show_state: false
+          tap_action:
+            action: call-service
+            service: button.press
+            target:
+              entity_id: button.sim_esempio_aggiorna_ora
+          styles:
+            card:
+              - width: 38px
+              - height: 38px
+              - border-radius: 50%
+              - padding: 0
+              - background: rgba(255,255,255,.16)
+              - border: 1px solid rgba(255,255,255,.20)
+              - box-shadow: none
+            icon:
+              - width: 18px
+              - color: white
+
+      hero: |
+        [[[
+          const get = id => states[id];
+
+          const fmt = (value, decimals = 1) => {
+            const n = parseFloat(value);
+            if (!Number.isFinite(n)) return '—';
+            return n.toLocaleString('it-IT', {
+              minimumFractionDigits: decimals,
+              maximumFractionDigits: decimals
+            });
+          };
+
+          const fmtDate = value => {
+            if (!value || value === 'unknown' || value === 'unavailable') return '—';
+            return new Date(value + 'T12:00:00').toLocaleDateString('it-IT', {
+              day: '2-digit',
+              month: 'long'
+            });
+          };
+
+          const offer = get('sensor.sim_esempio_offerta')?.state ?? 'Iliad';
+          const remaining = parseFloat(get('sensor.sim_esempio_dati_residui')?.state);
+          const percent = parseFloat(get('sensor.sim_esempio_dati_residui_percentuale')?.state);
+          const used = get('sensor.sim_esempio_dati_utilizzati')?.state;
+          const total = get('sensor.sim_esempio_plafond_dati')?.state;
+          const days = get('sensor.sim_esempio_giorni_al_rinnovo')?.state ?? '—';
+          const renewal = fmtDate(get('sensor.sim_esempio_data_rinnovo')?.state);
+
+          const remainingText = Number.isFinite(remaining)
+            ? remaining.toLocaleString('it-IT', { maximumFractionDigits: 0 })
+            : '—';
+
+          const percentage = Number.isFinite(percent)
+            ? Math.max(0, Math.min(100, percent))
+            : 0;
+
+          const usedText = used !== undefined ? fmt(used, 2) : '—';
+          const totalText = total !== undefined ? fmt(total, 1) : '—';
+
+          return `
+            <div style="
+              position:relative;
+              padding:26px 28px 27px;
+              color:white;
+              text-align:left;
+            ">
+              <div style="
+                position:absolute;
+                top:24px;
+                right:26px;
+                width:52px;
+                height:52px;
+                border-radius:15px;
+                background:white;
+                box-shadow:0 8px 22px rgba(80,0,15,.25);
+                display:flex;
+                align-items:center;
+                justify-content:center;
+              ">
+                <ha-icon icon="mdi:sim" style="width:29px;color:#e6002d;"></ha-icon>
+              </div>
+
+              <div style="
+                font-size:11px;
+                font-weight:700;
+                letter-spacing:1.55px;
+                text-transform:uppercase;
+                opacity:.78;
+                padding-right:82px;
+              ">
+                ILIAD ITALIA
+              </div>
+
+              <div style="
+                margin-top:5px;
+                font-size:24px;
+                font-weight:700;
+                padding-right:82px;
+              ">
+                ${offer}
+              </div>
+
+              <div style="
+                margin-top:27px;
+                display:flex;
+                align-items:flex-end;
+                gap:9px;
+              ">
+                <span style="
+                  font-size:64px;
+                  line-height:.86;
+                  font-weight:800;
+                  letter-spacing:-3px;
+                ">
+                  ${remainingText}
+                </span>
+                <span style="
+                  font-size:18px;
+                  font-weight:600;
+                  padding-bottom:6px;
+                  opacity:.92;
+                ">
+                  GB
+                </span>
+              </div>
+
+              <div style="margin-top:9px;font-size:14px;opacity:.82;">
+                dati disponibili
+              </div>
+
+              <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                margin-top:24px;
+                margin-bottom:8px;
+                font-size:12px;
+                font-weight:600;
+              ">
+                <span>${usedText} GB utilizzati</span>
+                <span>${fmt(percentage, 1)}% residuo</span>
+              </div>
+
+              <div style="
+                width:100%;
+                height:11px;
+                background:rgba(255,255,255,.25);
+                border-radius:99px;
+                overflow:hidden;
+              ">
+                <div style="
+                  width:${percentage}%;
+                  height:100%;
+                  background:white;
+                  border-radius:99px;
+                "></div>
+              </div>
+
+              <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                margin-top:15px;
+                font-size:13px;
+              ">
+                <span style="opacity:.82;">
+                  ${usedText} / ${totalText} GB
+                </span>
+                <span style="font-weight:700;">
+                  rinnovo ${renewal} · ${days} gg
+                </span>
+              </div>
+            </div>
+          `;
+        ]]]
+
+  ###########################################################################
+  # 2. IDENTITÀ SIM
+  ###########################################################################
+
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    show_state: false
+    triggers_update:
+      - sensor.sim_esempio_numero_di_telefono
+      - sensor.sim_esempio_utente_iliad
+    styles:
+      card:
+        - padding: 18px
+        - border-radius: 24px
+        - border: 1px solid rgba(127,127,127,.13)
+        - box-shadow: 0 5px 18px rgba(0,0,0,.06)
+      grid:
+        - grid-template-areas: '"content"'
+    custom_fields:
+      content: |
+        [[[
+          const safe = id => {
+            const value = states[id]?.state;
+            if (!value || value === 'unknown' || value === 'unavailable') return '—';
+            return value;
+          };
+
+          const phone = safe('sensor.sim_esempio_numero_di_telefono');
+          const accountId = safe('sensor.sim_esempio_utente_iliad');
+
+          return `
+            <div style="text-align:left;">
+              <div style="
+                font-size:11px;
+                text-transform:uppercase;
+                letter-spacing:1.4px;
+                opacity:.48;
+                margin-bottom:14px;
+              ">
+                Identità SIM
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div style="
+                  padding:14px;
+                  border-radius:18px;
+                  background:rgba(230,0,45,.07);
+                ">
+                  <ha-icon icon="mdi:phone" style="width:22px;color:#e6002d;"></ha-icon>
+                  <div style="margin-top:9px;font-size:11px;opacity:.55;">Numero linea</div>
+                  <div style="margin-top:2px;font-size:18px;font-weight:700;">${phone}</div>
+                </div>
+
+                <div style="
+                  padding:14px;
+                  border-radius:18px;
+                  background:rgba(127,127,127,.07);
+                ">
+                  <ha-icon icon="mdi:account-key-outline" style="width:22px;color:#e6002d;"></ha-icon>
+                  <div style="margin-top:9px;font-size:11px;opacity:.55;">ID utente</div>
+                  <div style="margin-top:2px;font-size:18px;font-weight:700;">${accountId}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        ]]]
+
+  ###########################################################################
+  # 3. OFFERTA E CREDITO
+  ###########################################################################
+
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    show_state: false
+    triggers_update:
+      - sensor.sim_esempio_costo_offerta
+      - sensor.sim_esempio_credito
+      - sensor.sim_esempio_offerta
+      - sensor.sim_esempio_data_rinnovo
+    styles:
+      card:
+        - padding: 18px
+        - border-radius: 24px
+        - border: 1px solid rgba(127,127,127,.13)
+        - box-shadow: 0 5px 18px rgba(0,0,0,.07)
+      grid:
+        - grid-template-areas: '"content"'
+    custom_fields:
+      content: |
+        [[[
+          const fmt = value => {
+            const n = parseFloat(value);
+            if (!Number.isFinite(n)) return '—';
+            return n.toLocaleString('it-IT', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            });
+          };
+
+          const fmtDate = value => {
+            if (!value || value === 'unknown' || value === 'unavailable') return '—';
+            return new Date(value + 'T12:00:00').toLocaleDateString('it-IT', {
+              day: '2-digit',
+              month: 'long'
+            });
+          };
+
+          const price = fmt(states['sensor.sim_esempio_costo_offerta']?.state);
+          const credit = fmt(states['sensor.sim_esempio_credito']?.state);
+          const offer = states['sensor.sim_esempio_offerta']?.state ?? '—';
+          const renewal = fmtDate(states['sensor.sim_esempio_data_rinnovo']?.state);
+
+          return `
+            <div style="text-align:left;">
+              <div style="
+                font-size:11px;
+                text-transform:uppercase;
+                letter-spacing:1.4px;
+                opacity:.48;
+                margin-bottom:14px;
+              ">
+                Offerta
+              </div>
+
+              <div style="font-size:21px;font-weight:750;margin-bottom:14px;">
+                ${offer}
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                <div style="padding:14px;border-radius:18px;background:rgba(230,0,45,.07);">
+                  <ha-icon icon="mdi:cash-sync" style="color:#e6002d;width:22px;"></ha-icon>
+                  <div style="margin-top:9px;font-size:11px;opacity:.55;">Costo</div>
+                  <div style="font-size:20px;font-weight:750;">${price} €</div>
+                </div>
+
+                <div style="padding:14px;border-radius:18px;background:rgba(127,127,127,.07);">
+                  <ha-icon icon="mdi:wallet-outline" style="color:#e6002d;width:22px;"></ha-icon>
+                  <div style="margin-top:9px;font-size:11px;opacity:.55;">Credito</div>
+                  <div style="font-size:20px;font-weight:750;">${credit} €</div>
+                </div>
+
+                <div style="padding:14px;border-radius:18px;background:rgba(127,127,127,.07);">
+                  <ha-icon icon="mdi:calendar-refresh" style="color:#e6002d;width:22px;"></ha-icon>
+                  <div style="margin-top:9px;font-size:11px;opacity:.55;">Rinnovo</div>
+                  <div style="font-size:15px;font-weight:750;">${renewal}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        ]]]
+
+  ###########################################################################
+  # 4. TRAFFICO ITALIA
+  ###########################################################################
+
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    show_state: false
+    triggers_update:
+      - sensor.sim_esempio_plafond_dati
+      - sensor.sim_esempio_dati_utilizzati
+      - sensor.sim_esempio_dati_residui
+      - sensor.sim_esempio_dati_utilizzati_percentuale
+      - sensor.sim_esempio_dati_residui_percentuale
+    styles:
+      card:
+        - padding: 20px
+        - border-radius: 24px
+        - border: 1px solid rgba(127,127,127,.13)
+      grid:
+        - grid-template-areas: '"content"'
+    custom_fields:
+      content: |
+        [[[
+          const fmt = (id, decimals = 1) => {
+            const n = parseFloat(states[id]?.state);
+            if (!Number.isFinite(n)) return '—';
+            return n.toLocaleString('it-IT', {
+              minimumFractionDigits: decimals,
+              maximumFractionDigits: decimals
+            });
+          };
+
+          const total = fmt('sensor.sim_esempio_plafond_dati', 1);
+          const used = fmt('sensor.sim_esempio_dati_utilizzati', 2);
+          const remaining = fmt('sensor.sim_esempio_dati_residui', 2);
+          const usedPercent = fmt('sensor.sim_esempio_dati_utilizzati_percentuale', 1);
+          const remainingPercent = parseFloat(
+            states['sensor.sim_esempio_dati_residui_percentuale']?.state
+          );
+          const bar = Number.isFinite(remainingPercent)
+            ? Math.max(0, Math.min(100, remainingPercent))
+            : 0;
+
+          return `
+            <div style="text-align:left;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:17px;">
+                <div style="
+                  width:42px;height:42px;border-radius:14px;
+                  display:flex;align-items:center;justify-content:center;
+                  background:rgba(230,0,45,.08);flex:0 0 42px;
+                ">
+                  <ha-icon icon="mdi:database" style="width:24px;color:#e6002d;"></ha-icon>
+                </div>
+                <div>
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.4px;opacity:.48;">
+                    Traffico Italia
+                  </div>
+                  <div style="font-size:20px;font-weight:750;">${remaining} GB disponibili</div>
+                </div>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:7px;opacity:.58;">
+                <span>${used} GB utilizzati</span>
+                <span>${Number.isFinite(remainingPercent)
+                  ? remainingPercent.toLocaleString('it-IT', { maximumFractionDigits: 1 })
+                  : '—'}% residuo</span>
+              </div>
+
+              <div style="
+                width:100%;height:10px;border-radius:99px;
+                background:rgba(127,127,127,.13);
+                overflow:hidden;margin-bottom:16px;
+              ">
+                <div style="height:100%;width:${bar}%;background:#e6002d;border-radius:99px;"></div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                <div>
+                  <div style="font-size:11px;opacity:.5;">Plafond</div>
+                  <div style="font-size:18px;font-weight:750;">${total} GB</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;opacity:.5;">Utilizzati</div>
+                  <div style="font-size:18px;font-weight:750;">${used} GB</div>
+                  <div style="font-size:10px;opacity:.4;">${usedPercent}%</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;opacity:.5;">Residui</div>
+                  <div style="font-size:18px;font-weight:750;">${remaining} GB</div>
+                  <div style="font-size:10px;opacity:.4;">
+                    ${Number.isFinite(remainingPercent)
+                      ? remainingPercent.toLocaleString('it-IT', { maximumFractionDigits: 1 })
+                      : '—'}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        ]]]
+
+  ###########################################################################
+  # 5. TRAFFICO ESTERO
+  ###########################################################################
+
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    show_state: false
+    triggers_update:
+      - sensor.sim_esempio_plafond_dati_estero
+      - sensor.sim_esempio_dati_utilizzati_estero
+      - sensor.sim_esempio_dati_residui_estero
+      - sensor.sim_esempio_dati_utilizzati_estero_percentuale
+      - sensor.sim_esempio_dati_residui_estero_percentuale
+    styles:
+      card:
+        - padding: 20px
+        - border-radius: 24px
+        - border: 1px solid rgba(127,127,127,.13)
+      grid:
+        - grid-template-areas: '"content"'
+    custom_fields:
+      content: |
+        [[[
+          const fmt = (id, decimals = 1) => {
+            const n = parseFloat(states[id]?.state);
+            if (!Number.isFinite(n)) return '—';
+            return n.toLocaleString('it-IT', {
+              minimumFractionDigits: decimals,
+              maximumFractionDigits: decimals
+            });
+          };
+
+          const total = fmt('sensor.sim_esempio_plafond_dati_estero', 1);
+          const used = fmt('sensor.sim_esempio_dati_utilizzati_estero', 2);
+          const remaining = fmt('sensor.sim_esempio_dati_residui_estero', 2);
+          const usedPercent = fmt('sensor.sim_esempio_dati_utilizzati_estero_percentuale', 1);
+          const remainingPercent = parseFloat(
+            states['sensor.sim_esempio_dati_residui_estero_percentuale']?.state
+          );
+          const bar = Number.isFinite(remainingPercent)
+            ? Math.max(0, Math.min(100, remainingPercent))
+            : 0;
+
+          return `
+            <div style="text-align:left;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:17px;">
+                <div style="
+                  width:42px;height:42px;border-radius:14px;
+                  display:flex;align-items:center;justify-content:center;
+                  background:rgba(230,0,45,.08);flex:0 0 42px;
+                ">
+                  <ha-icon icon="mdi:earth" style="width:24px;color:#e6002d;"></ha-icon>
+                </div>
+                <div>
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.4px;opacity:.48;">
+                    Estero
+                  </div>
+                  <div style="font-size:20px;font-weight:750;">${remaining} GB disponibili</div>
+                </div>
+              </div>
+
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:7px;opacity:.58;">
+                <span>${used} GB utilizzati</span>
+                <span>${Number.isFinite(remainingPercent)
+                  ? remainingPercent.toLocaleString('it-IT', { maximumFractionDigits: 1 })
+                  : '—'}% residuo</span>
+              </div>
+
+              <div style="
+                width:100%;height:10px;border-radius:99px;
+                background:rgba(127,127,127,.13);
+                overflow:hidden;margin-bottom:16px;
+              ">
+                <div style="height:100%;width:${bar}%;background:#e6002d;border-radius:99px;"></div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                <div>
+                  <div style="font-size:11px;opacity:.5;">Plafond</div>
+                  <div style="font-size:18px;font-weight:750;">${total} GB</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;opacity:.5;">Utilizzati</div>
+                  <div style="font-size:18px;font-weight:750;">${used} GB</div>
+                  <div style="font-size:10px;opacity:.4;">${usedPercent}%</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;opacity:.5;">Residui</div>
+                  <div style="font-size:18px;font-weight:750;">${remaining} GB</div>
+                  <div style="font-size:10px;opacity:.4;">
+                    ${Number.isFinite(remainingPercent)
+                      ? remainingPercent.toLocaleString('it-IT', { maximumFractionDigits: 1 })
+                      : '—'}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        ]]]
+
+  ###########################################################################
+  # 6. ANDAMENTO E PROIEZIONI
+  ###########################################################################
+
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    show_state: false
+    triggers_update:
+      - sensor.sim_esempio_consumo_medio_giornaliero_stimato
+      - sensor.sim_esempio_budget_dati_giornaliero_fino_al_rinnovo
+      - sensor.sim_esempio_dati_previsti_al_rinnovo
+      - sensor.sim_esempio_giorni_al_rinnovo
+    styles:
+      card:
+        - padding: 20px
+        - border-radius: 24px
+        - background: '#202020'
+        - color: white
+        - border: none
+      grid:
+        - grid-template-areas: '"content"'
+    custom_fields:
+      content: |
+        [[[
+          const fmt = (id, decimals) => {
+            const n = parseFloat(states[id]?.state);
+            if (!Number.isFinite(n)) return '—';
+            return n.toLocaleString('it-IT', {
+              minimumFractionDigits: decimals,
+              maximumFractionDigits: decimals
+            });
+          };
+
+          const avg = fmt('sensor.sim_esempio_consumo_medio_giornaliero_stimato', 2);
+          const budget = fmt('sensor.sim_esempio_budget_dati_giornaliero_fino_al_rinnovo', 1);
+          const projected = fmt('sensor.sim_esempio_dati_previsti_al_rinnovo', 1);
+          const days = states['sensor.sim_esempio_giorni_al_rinnovo']?.state ?? '—';
+
+          const metric = (icon, label, value, unit) => `
+            <div>
+              <ha-icon icon="${icon}" style="color:#ef0037;width:22px;"></ha-icon>
+              <div style="margin-top:9px;font-size:11px;opacity:.55;">${label}</div>
+              <div style="font-size:19px;font-weight:700;">${value} ${unit}</div>
+            </div>
+          `;
+
+          return `
+            <div style="text-align:left;">
+              <div style="
+                font-size:12px;
+                text-transform:uppercase;
+                letter-spacing:1.5px;
+                opacity:.52;
+                margin-bottom:17px;
+              ">
+                Andamento del periodo
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                ${metric('mdi:speedometer', 'Media', avg, 'GB/g')}
+                ${metric('mdi:chart-timeline-variant', 'Budget', budget, 'GB/g')}
+                ${metric('mdi:chart-line', 'Al rinnovo', projected, 'GB')}
+                ${metric('mdi:calendar-clock', 'Mancano', days, 'gg')}
+              </div>
+            </div>
+          `;
+        ]]]
+
+  ###########################################################################
+  # 7. VOCE / SMS / MMS
+  ###########################################################################
+
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    show_state: false
+    triggers_update:
+      - sensor.sim_esempio_durata_chiamate
+      - sensor.sim_esempio_costo_chiamate
+      - sensor.sim_esempio_sms_inviati
+      - sensor.sim_esempio_costo_sms_extra
+      - sensor.sim_esempio_mms_inviati
+      - sensor.sim_esempio_costo_mms
+    styles:
+      card:
+        - padding: 20px
+        - border-radius: 24px
+        - border: 1px solid rgba(127,127,127,.13)
+      grid:
+        - grid-template-areas: '"content"'
+    custom_fields:
+      content: |
+        [[[
+          const value = id => {
+            const state = states[id]?.state;
+            if (!state || state === 'unknown' || state === 'unavailable') return '—';
+            return state;
+          };
+
+          const euro = id => {
+            const n = parseFloat(states[id]?.state);
+            if (!Number.isFinite(n)) return '—';
+            return `${n.toLocaleString('it-IT', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            })} €`;
+          };
+
+          const formatDuration = id => {
+            const obj = states[id];
+            if (!obj || obj.state === 'unknown' || obj.state === 'unavailable') return '—';
+
+            const n = parseFloat(obj.state);
+            if (!Number.isFinite(n)) return '—';
+
+            const unit = (obj.attributes?.unit_of_measurement ?? 's').toLowerCase();
+            let totalSeconds;
+
+            if (unit === 'min' || unit === 'minute' || unit === 'minutes') {
+              totalSeconds = Math.round(n * 60);
+            } else if (unit === 'h' || unit === 'hour' || unit === 'hours') {
+              totalSeconds = Math.round(n * 3600);
+            } else {
+              totalSeconds = Math.round(n);
+            }
+
+            totalSeconds = Math.max(0, totalSeconds);
+
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            if (hours > 0) {
+              return [
+                `${hours} h`,
+                minutes > 0 ? `${minutes} min` : '',
+                seconds > 0 ? `${seconds} s` : ''
+              ].filter(Boolean).join(' ');
+            }
+
+            if (minutes > 0) {
+              return [
+                `${minutes} min`,
+                seconds > 0 ? `${seconds} s` : ''
+              ].filter(Boolean).join(' ');
+            }
+
+            if (seconds > 0) return `${seconds} s`;
+            return '0 min';
+          };
+
+          const row = (icon, label, main, secondary, last = false) => `
+            <div style="
+              display:grid;
+              grid-template-columns:42px 1fr auto;
+              align-items:center;
+              gap:11px;
+              padding:12px 0;
+              border-bottom:${last ? 'none' : '1px solid rgba(127,127,127,.10)'};
+            ">
+              <div style="
+                width:38px;height:38px;border-radius:13px;
+                display:flex;align-items:center;justify-content:center;
+                background:rgba(230,0,45,.07);
+              ">
+                <ha-icon icon="${icon}" style="width:21px;color:#e6002d;"></ha-icon>
+              </div>
+
+              <div>
+                <div style="font-size:11px;opacity:.52;">${label}</div>
+                <div style="font-size:18px;font-weight:750;">${main}</div>
+              </div>
+
+              <div style="font-size:13px;font-weight:650;opacity:.6;">${secondary}</div>
+            </div>
+          `;
+
+          return `
+            <div style="text-align:left;">
+              <div style="
+                font-size:11px;
+                text-transform:uppercase;
+                letter-spacing:1.4px;
+                opacity:.48;
+                margin-bottom:5px;
+              ">
+                Voce e messaggi
+              </div>
+
+              ${row(
+                'mdi:phone-outline',
+                'Chiamate',
+                formatDuration('sensor.sim_esempio_durata_chiamate'),
+                euro('sensor.sim_esempio_costo_chiamate')
+              )}
+
+              ${row(
+                'mdi:message-text-outline',
+                'SMS',
+                `${value('sensor.sim_esempio_sms_inviati')} SMS`,
+                euro('sensor.sim_esempio_costo_sms_extra')
+              )}
+
+              ${row(
+                'mdi:message-image-outline',
+                'MMS',
+                `${value('sensor.sim_esempio_mms_inviati')} MMS`,
+                euro('sensor.sim_esempio_costo_mms'),
+                true
+              )}
+            </div>
+          `;
+        ]]]
+
+  ###########################################################################
+  # 8. STATO
+  ###########################################################################
+
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    show_state: false
+    triggers_update:
+      - binary_sensor.sim_esempio_dati_in_esaurimento
+      - binary_sensor.sim_esempio_credito_basso
+      - binary_sensor.sim_esempio_rischio_esaurimento_prima_del_rinnovo
+    styles:
+      card:
+        - padding: 17px
+        - border-radius: 24px
+        - border: 1px solid rgba(127,127,127,.13)
+      grid:
+        - grid-template-areas: '"status"'
+    custom_fields:
+      status: |
+        [[[
+          const item = (entityId, icon, label) => {
+            const bad = states[entityId]?.state === 'on';
+
+            return `
+              <div style="
+                display:flex;
+                align-items:center;
+                gap:8px;
+                padding:10px 12px;
+                border-radius:16px;
+                background:${bad ? 'rgba(230,0,45,.085)' : 'rgba(37,166,86,.10)'};
+              ">
+                <ha-icon
+                  icon="${icon}"
+                  style="width:20px;color:${bad ? '#d91f3a' : '#239b56'};">
+                </ha-icon>
+
+                <div>
+                  <div style="font-size:10px;opacity:.55;">${label}</div>
+                  <div style="
+                    font-size:13px;
+                    font-weight:700;
+                    color:${bad ? '#d91f3a' : '#239b56'};
+                  ">
+                    ${bad ? 'Attenzione' : 'OK'}
+                  </div>
+                </div>
+              </div>
+            `;
+          };
+
+          return `
+            <div style="
+              display:grid;
+              grid-template-columns:repeat(3,1fr);
+              gap:9px;
+              text-align:left;
+            ">
+              ${item(
+                'binary_sensor.sim_esempio_dati_in_esaurimento',
+                'mdi:database-alert-outline',
+                'Dati'
+              )}
+              ${item(
+                'binary_sensor.sim_esempio_credito_basso',
+                'mdi:currency-eur-off',
+                'Credito'
+              )}
+              ${item(
+                'binary_sensor.sim_esempio_rischio_esaurimento_prima_del_rinnovo',
+                'mdi:chart-line-variant',
+                'Rischio'
+              )}
+            </div>
+          `;
+        ]]]
+
+  ###########################################################################
+  # 9. GRAFICO TRAFFICO
+  ###########################################################################
+
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    show_state: false
+    triggers_update:
+      - sensor.sim_esempio_dati_residui
+      - sensor.sim_esempio_dati_previsti_al_rinnovo
+      - sensor.sim_esempio_budget_dati_giornaliero_fino_al_rinnovo
+      - sensor.sim_esempio_giorni_al_rinnovo
+      - sensor.sim_esempio_data_rinnovo
+    styles:
+      card:
+        - padding: 0
+        - border-radius: 28px
+        - overflow: hidden
+        - border: none
+        - background: '#202020'
+      grid:
+        - grid-template-areas: |
+            "header"
+            "chart"
+      custom_fields:
+        header:
+          - width: 100%
+        chart:
+          - width: 100%
+          - padding: 0
+
+    custom_fields:
+      header: |
+        [[[
+          const days = states['sensor.sim_esempio_giorni_al_rinnovo']?.state ?? '—';
+          const renewalState = states['sensor.sim_esempio_data_rinnovo']?.state;
+
+          let renewal = '—';
+          if (renewalState && renewalState !== 'unknown' && renewalState !== 'unavailable') {
+            renewal = new Date(renewalState + 'T12:00:00').toLocaleDateString('it-IT', {
+              day: '2-digit',
+              month: 'long'
+            });
+          }
+
+          return `
+            <div style="
+              padding:22px 24px 18px;
+              color:white;
+              text-align:left;
+              box-sizing:border-box;
+              width:100%;
+            ">
+              <div style="
+                font-size:11px;
+                text-transform:uppercase;
+                letter-spacing:1.45px;
+                opacity:.48;
+                line-height:1.4;
+              ">
+                ANDAMENTO TRAFFICO
+              </div>
+
+              <div style="
+                margin-top:5px;
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:12px;
+                width:100%;
+              ">
+                <div style="font-size:24px;font-weight:750;line-height:1.15;">
+                  Consumo dati
+                </div>
+
+                <div style="
+                  display:flex;
+                  align-items:center;
+                  gap:5px;
+                  padding:7px 9px;
+                  border-radius:13px;
+                  background:rgba(230,0,45,.12);
+                  color:#ff3156;
+                  font-size:11px;
+                  font-weight:700;
+                  white-space:nowrap;
+                ">
+                  <ha-icon icon="mdi:calendar-refresh" style="width:17px;color:#ff3156;"></ha-icon>
+                  <span>${renewal} · ${days} gg</span>
+                </div>
+              </div>
+            </div>
+          `;
+        ]]]
+
+      chart:
+        card:
+          type: custom:apexcharts-card
+          graph_span: 7d
+          update_interval: 5min
+
+          header:
+            show: false
+
+          card_mod:
+            style: |
+              ha-card {
+                background: #ffffff !important;
+                background-color: #ffffff !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 26px 26px 0 0 !important;
+                padding: 0 !important;
+              }
+
+          apex_config:
+            chart:
+              height: 285
+              background: transparent
+              foreColor: '#666666'
+              toolbar:
+                show: false
+
+            grid:
+              borderColor: rgba(0,0,0,.08)
+              strokeDashArray: 4
+              padding:
+                left: 4
+                right: 8
+                top: 8
+                bottom: 2
+
+            legend:
+              show: true
+              position: bottom
+              horizontalAlign: center
+              fontSize: 11px
+              labels:
+                colors: '#666666'
+
+            tooltip:
+              shared: true
+              intersect: false
+              theme: light
+
+            dataLabels:
+              enabled: false
+
+            markers:
+              size: 0
+
+            stroke:
+              curve: smooth
+
+            xaxis:
+              labels:
+                style:
+                  colors: '#777777'
+                  fontSize: 10px
+                datetimeUTC: false
+                format: dd/MM
+              axisBorder:
+                show: false
+              axisTicks:
+                show: false
+
+            fill:
+              type: solid
+
+          yaxis:
+            - id: dati
+              min: 0
+              decimals: 0
+              apex_config:
+                labels:
+                  style:
+                    colors: '#777777'
+                title:
+                  text: GB
+                  style:
+                    color: '#777777'
+
+            - id: giornaliero
+              opposite: true
+              min: 0
+              decimals: 1
+              apex_config:
+                labels:
+                  style:
+                    colors: '#777777'
+                title:
+                  text: GB/g
+                  style:
+                    color: '#777777'
+
+          series:
+            - entity: sensor.sim_esempio_dati_residui
+              name: Residui
+              yaxis_id: dati
+              type: area
+              color: '#ef0037'
+              stroke_width: 3
+              opacity: 0.16
+              float_precision: 1
+              group_by:
+                func: last
+                duration: 1h
+              show:
+                extremas: false
+                in_header: false
+                legend_value: false
+
+            - entity: sensor.sim_esempio_dati_previsti_al_rinnovo
+              name: Al rinnovo
+              yaxis_id: dati
+              type: line
+              color: '#202020'
+              stroke_width: 2
+              float_precision: 1
+              group_by:
+                func: last
+                duration: 1h
+              show:
+                extremas: false
+                in_header: false
+                legend_value: false
+
+            - entity: sensor.sim_esempio_budget_dati_giornaliero_fino_al_rinnovo
+              name: Budget
+              yaxis_id: giornaliero
+              type: line
+              color: '#9a9a9a'
+              stroke_width: 2
+              float_precision: 1
+              group_by:
+                func: last
+                duration: 1h
+              show:
+                extremas: false
+                in_header: false
+                legend_value: false
