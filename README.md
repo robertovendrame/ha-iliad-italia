@@ -2,7 +2,7 @@
 
 Custom integration non ufficiale per Home Assistant che legge i dati dell'Area Personale Iliad Italia.
 
-> Stato: **testata con account Iliad reali**, inclusa la configurazione contemporanea di due SIM/account nella stessa istanza Home Assistant.
+> Stato: **testata con account Iliad reali**, incluso l'uso contemporaneo di più SIM/account nella stessa istanza Home Assistant.
 
 ## Versioni
 
@@ -70,7 +70,7 @@ Per provare una pre-release, abilita la visualizzazione/installazione delle vers
 
 Ogni account Iliad usa una sessione HTTP e un cookie jar dedicati. Questo evita conflitti tra più SIM configurate nella stessa istanza Home Assistant.
 
-Il comportamento multi-SIM è stato verificato con due account Iliad reali contemporaneamente.
+Il comportamento multi-SIM è stato verificato con più account Iliad reali contemporaneamente.
 
 ## Offerta e plafond dati
 
