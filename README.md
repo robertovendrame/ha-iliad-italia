@@ -7,9 +7,9 @@ Custom integration non ufficiale per Home Assistant che legge i dati dell'Area P
 ## Versioni
 
 - stabile: **v0.6.0**
-- sviluppo/test: nessuna pre-release corrente
+- sviluppo/test: **v0.6.1-beta.1**
 
-Le GitHub Releases sono il riferimento per installazione e aggiornamento tramite HACS. Le versioni `alpha`, `beta` e `rc` vengono pubblicate come pre-release.
+Le GitHub Releases sono il riferimento per installazione e aggiornamento tramite HACS. Le versioni `alpha`, `beta` e `rc` vengono pubblicate come pre-release e non sono consigliate a chi vuole semplicemente usare l'integrazione in produzione.
 
 ## Funzioni
 
@@ -39,6 +39,7 @@ Ogni account/SIM crea un device separato con:
 - binary sensor **Rischio esaurimento prima del rinnovo**;
 - binary sensor **Dati in esaurimento**;
 - binary sensor **Credito basso**;
+- dalla **v0.6.1-beta.1**, binary sensor **Offerta attiva**, basato sul periodo di riferimento reale;
 - ultimo aggiornamento riuscito;
 - pulsante **Aggiorna ora**.
 
@@ -46,14 +47,24 @@ Quando il plafond ufficiale è disponibile, le percentuali vengono calcolate su 
 
 ## Installazione tramite HACS
 
-1. Apri HACS.
-2. Vai in **Custom repositories**.
-3. Aggiungi `https://github.com/robertovendrame/ha-iliad-italia` come **Integration**.
-4. Installa **Iliad Italia**.
-5. Riavvia Home Assistant.
-6. Vai in **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → Iliad Italia**.
+Prerequisito: **HACS deve essere già installato e configurato** in Home Assistant.
 
-Per provare una futura beta, abilita le pre-release per la repository HACS e scegli la versione desiderata.
+Questa integrazione non è attualmente nel catalogo HACS predefinito, quindi va aggiunta una sola volta come repository personalizzata:
+
+1. Apri **HACS**.
+2. Apri il menu **⋮** in alto a destra e scegli **Custom repositories**.
+3. Nel campo repository incolla:
+   `https://github.com/robertovendrame/ha-iliad-italia`
+4. Come tipo seleziona **Integration** e premi **Add**.
+5. Cerca/apri **Iliad Italia** in HACS e installa l'ultima versione stabile.
+6. **Riavvia Home Assistant**.
+7. Vai in **Impostazioni → Dispositivi e servizi → Aggiungi integrazione**.
+8. Cerca **Iliad Italia** e inserisci ID utente e password dell'Area Personale Iliad.
+9. Se hai più SIM/account, ripeti l'aggiunta dell'integrazione per ogni account.
+
+Gli aggiornamenti successivi vengono proposti normalmente da HACS.
+
+Per provare una pre-release, abilita la visualizzazione/installazione delle versioni beta per questa repository in HACS e scegli esplicitamente la versione desiderata. Per un'installazione normale usa la release stabile.
 
 ## Multi-SIM
 
@@ -120,6 +131,10 @@ L'integrazione legge il periodo di riferimento reale dalla pagina Iliad. Quando 
 Il consumo medio giornaliero usa l'inizio reale del periodo. Il budget giornaliero divide i GB residui per i giorni mancanti al rinnovo. La previsione dei dati residui al rinnovo applica il consumo medio corrente ai giorni rimanenti.
 
 Queste proiezioni sono calcolate localmente e non sono valori forniti direttamente da Iliad.
+
+Dalla **v0.6.1-beta.1** è disponibile anche **Offerta attiva**. Se il periodo di riferimento letto dal portale è già scaduto, i sensori di rinnovo/proiezione che diventerebbero fuorvianti vengono resi non disponibili. Iliad può continuare a mostrare il plafond commerciale anche su una SIM senza periodo tariffario attivo: per questo il plafond, da solo, non va interpretato come traffico effettivamente utilizzabile.
+
+Il sensore **Credito basso** resta volutamente un allarme sul saldo configurabile. Non prova a stabilire se il rinnovo riuscirà, perché il pagamento può dipendere anche dal metodo di pagamento automatico associato alla linea.
 
 ## Opzioni per ogni SIM
 
