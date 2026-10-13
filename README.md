@@ -66,6 +66,42 @@ Gli aggiornamenti successivi vengono proposti normalmente da HACS.
 
 Per provare una pre-release, abilita la visualizzazione/installazione delle versioni beta per questa repository in HACS e scegli esplicitamente la versione desiderata. Per un'installazione normale usa la release stabile.
 
+## Dashboard di esempio
+
+Nel repository trovi anche una **dashboard Lovelace di esempio** pensata per valorizzare tutte le entità esposte dall'integrazione: offerta, credito, traffico Italia/Estero, andamento del periodo, voce/SMS/MMS, stato e grafico dei consumi.
+
+La dashboard è **facoltativa** e non fa parte dell'integrazione: puoi usare Iliad Italia anche con le card standard di Home Assistant.
+
+### Requisiti della dashboard
+
+Per usare il layout completo servono queste custom card, installabili da HACS:
+
+- **Button Card** (`custom:button-card`);
+- **ApexCharts Card** (`custom:apexcharts-card`);
+- **card-mod**.
+
+### Installazione della dashboard
+
+1. Installa prima l'integrazione **Iliad Italia** e verifica che le entità della SIM siano disponibili.
+2. Installa da HACS le tre custom card indicate sopra.
+3. Apri il file [`examples/iliad-dashboard.yaml`](examples/iliad-dashboard.yaml).
+4. Copia il contenuto in una nuova card manuale/dashboard YAML.
+5. Sostituisci il prefisso di esempio `sim_esempio` con il prefisso reale delle tue entità.
+
+Esempio:
+
+```text
+sensor.sim_esempio_dati_residui
+↓
+sensor.sim_garage_dati_residui
+```
+
+Il prefisso dipende dal nome assegnato al device in Home Assistant e può quindi essere diverso su ogni installazione.
+
+> **Nota:** la dashboard è un esempio grafico separato dall'integrazione e può essere personalizzata liberamente. Se condividi screenshot pubblicamente, verifica sempre di non mostrare numero di telefono o ID utente Iliad.
+
+Dalla `v0.6.1-beta.1` è disponibile anche il binary sensor **Offerta attiva**: puoi usarlo per rendere la dashboard consapevole delle SIM con periodo tariffario scaduto.
+
 ## Multi-SIM
 
 Ogni account Iliad usa una sessione HTTP e un cookie jar dedicati. Questo evita conflitti tra più SIM configurate nella stessa istanza Home Assistant.
