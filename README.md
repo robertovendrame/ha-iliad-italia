@@ -72,6 +72,18 @@ Nel repository trovi anche una **dashboard Lovelace di esempio** pensata per val
 
 La dashboard è **facoltativa** e non fa parte dell'integrazione: puoi usare Iliad Italia anche con le card standard di Home Assistant.
 
+### Anteprima
+
+Panoramica multi-SIM:
+
+![Dashboard Iliad Italia multi-SIM](docs/images/iliad-dashboard-multisim-anon.png)
+
+Esempio di dashboard completa per una singola SIM:
+
+<p align="center">
+  <img src="docs/images/iliad-dashboard-casetta-anon.png" alt="Dashboard Iliad Italia singola SIM" width="420">
+</p>
+
 ### Requisiti della dashboard
 
 Per usare il layout completo servono queste custom card, installabili da HACS:
